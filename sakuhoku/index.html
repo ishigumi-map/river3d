@@ -159,6 +159,10 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .detail img { width: 100%; border-radius: 9px; display: block; }
 .detail h2 { margin: 0; font-size: 0.95rem; font-weight: 700; line-height: 1.55; text-wrap: balance; }
 .detail p { margin: 0; font-size: 0.7rem; color: var(--muted); font-family: var(--font-data); line-height: 1.6; }
+.vstat{width:100%;border-collapse:collapse;font-family:var(--font-data);font-size:.68rem;font-variant-numeric:tabular-nums}
+.vstat th,.vstat td{border:1px solid var(--line);padding:3px 5px;text-align:right;font-weight:400}
+.vstat thead th{text-align:center;font-weight:700}.vstat tbody th{text-align:left}
+#v-stat{overflow-x:auto}
 .detail .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .detail button, .xbtn { font-size: 0.8rem; padding: 6px 12px; border-radius: 8px; cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--fg); }
 .detail button:hover, .xbtn:hover { border-color: var(--accent); }
@@ -292,6 +296,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   <div class="vthumbs" id="v-thumbs" role="group" aria-label="この測点の写真"></div>
   <h2 id="v-cap"></h2>
   <p id="v-name"></p>
+  <div id="v-stat"></div>
   <div class="row"><button id="v-close">閉じる</button></div>
 </section>
 <div class="compass" aria-hidden="true"><canvas id="compass" width="96" height="96"></canvas></div>
@@ -664,14 +669,24 @@ function upsertVel(id, d) {
   v.d = d;
   const y = (typeof d.y === 'number') ? d.y : groundAt(d.x, d.z);
   v.g.position.set(d.x, y ?? yMin, d.z);
-  v.label.textContent = d.label || id; v.label.dataset.tentative = String(!!d.tentative);
+  v.label.textContent = VSTAT[id]?.name || d.label || id; v.label.dataset.tentative = String(!!d.tentative);
   v.label.title = d.note || '';
+}
+const VSTAT = { /* 朔北橋 2026-10-19, KENEK LP40; same wording as the measurement table */
+  p1: { name: 'Position 1', depth: 0.35, avg: [0.513, 0.801, 0.840], sd: [0.041, 0.055, 0.044] },
+  p2: { name: 'Position 2', depth: 0.33, avg: [0.008, 0.287, 0.989], sd: [0.048, 0.066, 0.165] },
+  p3: { name: 'Position 3', depth: 0.16, avg: [0.279, 0.935, 0.956], sd: [0.067, 0.048, 0.081] },
+  p4: { name: 'Position 4', depth: 0.28, avg: [0.411, 0.971, 1.413], sd: [0.078, 0.110, 0.045] } };
+function vstatTable(id) {
+  const s = VSTAT[id]; if (!s) return '';
+  const f = a => a.map(x => `<td>${x.toFixed(3)}</td>`).join('');
+  return `<p>Water depth：about ${s.depth.toFixed(2)} m</p><table class="vstat"><thead><tr><th></th><th>Bottom layer</th><th>Intermediate</th><th>Surface layer</th></tr></thead><tbody><tr><th>Time-averaged velocity (m/s)</th>${f(s.avg)}</tr><tr><th>Standard deviation (m/s)</th>${f(s.sd)}</tr></tbody></table>`;
 }
 const vdetail = document.getElementById('vdetail'); let velMedia = {};
 fetch('vel_media.json').then(r => r.json()).then(m => { velMedia = m; }).catch(e => console.error(e));
 function openVel(id) {
   const v = vels.get(id), list = velMedia[id] || []; if (!v) return;
-  document.getElementById('v-cap').textContent = `${v.d.label || id} の測定の様子`;
+  document.getElementById('v-cap').textContent = `${VSTAT[id]?.name || v.d.label || id} の測定の様子`; document.getElementById('v-stat').innerHTML = vstatTable(id);
   const th = document.getElementById('v-thumbs'); th.replaceChildren();
   const show = (m, b) => { document.getElementById('v-img').src = m.src; document.getElementById('v-name').textContent = m.name + (m.note ? '　' + m.note : '');
     th.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); };
