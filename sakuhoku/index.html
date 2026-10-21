@@ -1,0 +1,756 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="robots" content="noai, noimageai"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}
+/* survey-sheet look: square corners, solid paper panels, thin ink rules, BIZ UD Gothic */
+:root { --paper:#fdfcf9; --ink:#1b1b1a; --hair:#c9c7bf; --red:#b3261e;
+  --glass:#fdfcf9; --glass-strong:#fdfcf9; --fg:#1b1b1a; --muted:#5d5c56; --faint:#7a7871; --line:#1b1b1a; --track:transparent; --accent:#1b1b1a; --accent-fg:#fdfcf9; --pin:#b3261e;
+  --shadow:none; --r:0px;
+  --font-ui:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; --font-data:"BIZ UDGothic",ui-monospace,monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --paper:#1c1c1a; --ink:#e9e7e0; --hair:#45443f; --red:#e5675d;
+  --glass:#1c1c1a; --glass-strong:#1c1c1a; --fg:#e9e7e0; --muted:#b0aea6; --faint:#8d8b84; --line:#e9e7e0; --accent:#e9e7e0; --accent-fg:#1c1c1a; --pin:#e5675d; } }
+:root[data-theme="dark"] { --paper:#1c1c1a; --ink:#e9e7e0; --hair:#45443f; --red:#e5675d;
+  --glass:#1c1c1a; --glass-strong:#1c1c1a; --fg:#e9e7e0; --muted:#b0aea6; --faint:#8d8b84; --line:#e9e7e0; --accent:#e9e7e0; --accent-fg:#1c1c1a; --pin:#e5675d; }
+.bar, .note, .detail, .editbar, .bar-open { backdrop-filter:none !important; -webkit-backdrop-filter:none !important; box-shadow:none !important; border-radius:0 !important; border:1px solid var(--line) !important; }
+.bar { gap:8px 16px; }
+.bar h1 { letter-spacing:.06em; }
+.group .cap, .cut { letter-spacing:.1em; color:var(--muted); }
+.seg, .dates { padding:0; gap:0; border-radius:0; background:transparent; }
+.seg button, .detail .dates button { border:1px solid var(--line) !important; margin-left:-1px; border-radius:0 !important; color:var(--fg); box-shadow:none !important; font-weight:400; }
+.seg button[aria-pressed="true"], .detail .dates button[aria-pressed="true"] { background:var(--ink) !important; color:var(--paper) !important; }
+.seg.vel button[aria-pressed="true"] { background:var(--vel) !important; color:#fff !important; border-color:var(--vel) !important; }
+.detail button, .xbtn { border-radius:0 !important; border-color:var(--line); }
+.detail button:hover, .xbtn:hover { background:color-mix(in srgb, var(--ink) 8%, transparent); }
+.detail img, .pcard img, .vthumbs img, .detail .vthumbs button { border-radius:0 !important; }
+.pcard { border-radius:0; box-shadow:none; border:1px solid var(--ink); padding:2px; }
+.pcard span { border-radius:0; height:17px; }
+.pcard[aria-current="true"] { box-shadow:0 0 0 2px var(--pin); }
+.vlabel { border-radius:0; box-shadow:none; border:1px solid var(--paper); }
+.compass { border-radius:0; box-shadow:none; }
+.leader { stroke-width:1; }
+
+/* printed look: paper + three spot inks (青 #3286BE / 群青 #12286B / 赤 #C62422), single theme on purpose */
+:root, :root[data-theme="dark"] { --paper:#F4F3EF; --ink:#1C3A7E; --hair:#93BCD6; --red:#C62422;
+  --glass:#F4F3EF; --glass-strong:#F4F3EF; --fg:#1C3A7E; --muted:#1C3A7E; --faint:#3286BE; --line:#1C3A7E; --accent:#12286B; --accent-fg:#F4F3EF; --pin:#C62422; --vel:#3286BE;
+  --bg:#F4F3EF; --bg-2:#F4F3EF; color-scheme:light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --paper:#F4F3EF; --ink:#1C3A7E; --hair:#93BCD6; --red:#C62422;
+  --glass:#F4F3EF; --glass-strong:#F4F3EF; --fg:#1C3A7E; --muted:#1C3A7E; --faint:#3286BE; --line:#1C3A7E; --accent:#12286B; --accent-fg:#F4F3EF; --pin:#C62422; --vel:#3286BE;
+  --bg:#F4F3EF; --bg-2:#F4F3EF; color-scheme:light; } }
+.bar { border-top:0 !important; padding-top:16px; background-image:linear-gradient(90deg,#122A6B 0 42.86%,#3286BE 42.86% 71.43%,#93BCD6 71.43% 85.71%,#C62422 85.71%); background-size:100% 6px; background-repeat:no-repeat; }
+.seg button[aria-pressed="true"], .detail .dates button[aria-pressed="true"] { background:#12286B !important; border-color:#12286B !important; color:#F4F3EF !important; }
+.group .cap, .cut { color:#3286BE; }
+.pcard span { background:#C62422; }
+</style></head><body><title>橋下の河床 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=BIZ+UDGothic:wght@400;700&display=swap">
+<style>
+/* Layout: the river model fills the screen; controls float on a frosted instrument rail, photos hang on the side rails like field cards */
+:root {
+  --bg: #e6ebec;            /* overcast gravel */
+  --bg-2: #d5dde0;
+  --glass: rgba(248, 250, 250, 0.78);
+  --glass-strong: rgba(252, 253, 253, 0.94);
+  --fg: #16232a;
+  --muted: #5f6f76;
+  --faint: #8d9ca2;
+  --line: rgba(22, 35, 42, 0.12);
+  --track: rgba(22, 35, 42, 0.06);
+  --accent: #0e6f8f;        /* survey-tape teal */
+  --accent-fg: #ffffff;
+  --pin: #c53d4c;           /* photo-point red */
+  --vel: #2a5bd7;           /* current-meter blue */
+  --shadow: 0 10px 30px rgba(18, 32, 40, 0.14), 0 1px 2px rgba(18, 32, 40, 0.08);
+  --font-ui: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1619; --bg-2: #172126; --glass: rgba(20, 30, 35, 0.74); --glass-strong: rgba(22, 33, 38, 0.95);
+  --fg: #e4eef1; --muted: #98aab0; --faint: #66787e; --line: rgba(228, 238, 241, 0.12); --track: rgba(228, 238, 241, 0.06);
+  --accent: #4fb6d6; --accent-fg: #071216; --pin: #ef7381; --vel: #7fa4ff;
+  --shadow: 0 12px 34px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.4); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1619; --bg-2: #172126; --glass: rgba(20, 30, 35, 0.74); --glass-strong: rgba(22, 33, 38, 0.95);
+  --fg: #e4eef1; --muted: #98aab0; --faint: #66787e; --line: rgba(228, 238, 241, 0.12); --track: rgba(228, 238, 241, 0.06);
+  --accent: #4fb6d6; --accent-fg: #071216; --pin: #ef7381; --vel: #7fa4ff;
+  --shadow: 0 12px 34px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.4); color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-ui); overflow: hidden; -webkit-font-smoothing: antialiased; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+button { font: inherit; color: inherit; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* top instrument rail */
+.bar-hide { margin-left: auto; }
+.bar-open { position: fixed; z-index: 2; top: calc(12px + env(safe-area-inset-top, 0px)); left: max(12px, env(safe-area-inset-left, 0px));
+  padding: 8px 14px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); box-shadow: var(--shadow);
+  backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); color: var(--fg); font: inherit; font-size: 0.8rem; cursor: pointer; }
+.bar {
+  position: fixed; z-index: 2;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px));
+  display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+  padding: 10px 14px; border-radius: var(--r);
+  background: var(--glass); border: 1px solid var(--line); box-shadow: var(--shadow);
+  backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
+}
+.brand { display: grid; gap: 1px; margin-right: 4px; }
+.bar h1 { margin: 0; font-size: 1.02rem; font-weight: 700; letter-spacing: 0.02em; text-wrap: balance; line-height: 1.3; }
+.bar h1 small { display: none; }
+.brand .sub { margin: 0; font-family: var(--font-data); font-size: 0.68rem; color: var(--muted); letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+.group { display: grid; gap: 3px; }
+.group .cap { font-size: 0.62rem; color: var(--faint); letter-spacing: 0.14em; padding-left: 4px; }
+.seg { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 10px; background: var(--track); }
+.seg button {
+  font-size: 0.8rem; padding: 5px 11px; border-radius: 7px; cursor: pointer; border: 0; background: transparent; color: var(--muted);
+  transition: background 0.15s, color 0.15s;
+}
+.seg button:hover { color: var(--fg); }
+.seg button[aria-pressed="true"] { background: var(--glass-strong); color: var(--fg); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); font-weight: 500; }
+.seg.vel button[aria-pressed="true"] { background: var(--vel); color: #fff; }
+.sep { display: none; }
+.cut { display: grid; gap: 3px; font-size: 0.62rem; color: var(--faint); letter-spacing: 0.14em; }
+.cut-row { display: flex; align-items: center; gap: 8px; height: 30px; }
+.cut input { width: 8.5rem; accent-color: var(--accent); }
+.cut-val { font-family: var(--font-data); font-size: 0.7rem; color: var(--muted); min-width: 4.5em; letter-spacing: 0; }
+
+/* bottom-left help note */
+.note {
+  position: fixed; z-index: 2; left: max(12px, env(safe-area-inset-left, 0px));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px)); max-width: min(27rem, calc(100% - 24px));
+  background: var(--glass); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 38px 12px 14px;
+  font-size: 0.74rem; line-height: 1.7; color: var(--muted); box-shadow: var(--shadow);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.note b { color: var(--fg); font-weight: 500; }
+.note .fine { display: block; margin-top: 4px; font-size: 0.68rem; color: var(--faint); }
+.note-x { position: absolute; top: 8px; right: 8px; }
+.compass { position: fixed; z-index: 2; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  border-radius: 50%; box-shadow: var(--shadow); }
+.compass canvas { display: block; }
+[hidden] { display: none !important; }
+#status { position: fixed; inset: 0; display: grid; place-items: center; z-index: 1; color: var(--muted); font-size: 0.9rem; letter-spacing: 0.06em; pointer-events: none; }
+
+/* photo rails */
+.photo-layer { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.photo-layer svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.leader { stroke: var(--pin); stroke-width: 0.8; stroke-opacity: 0.22; fill: none; transition: stroke-opacity .15s, stroke-width .15s; }
+.leader.hot { stroke-width: 1.4; stroke-opacity: 0.9; }
+.pcard {
+  position: absolute; width: 100px; pointer-events: auto; cursor: pointer; padding: 3px; text-align: left;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--glass-strong); color: var(--fg);
+  box-shadow: var(--shadow); overflow: hidden; transition: transform 0.15s, border-color 0.15s;
+}
+.pcard:hover { transform: translateY(-1px); border-color: var(--pin); }
+.pcard img { display: block; width: 100%; height: 56px; object-fit: cover; border-radius: 7px; }
+.pcard span { position: absolute; top: 7px; left: 7px; min-width: 20px; height: 18px; border-radius: 9px; background: var(--pin); color: #fff;
+  font-family: var(--font-data); font-size: 0.66rem; font-weight: 500; display: grid; place-items: center; padding: 0 5px; font-variant-numeric: tabular-nums; }
+.pcard[aria-current="true"] { border-color: var(--pin); box-shadow: 0 0 0 2px var(--pin), var(--shadow); }
+
+/* side panels */
+.detail {
+  position: fixed; z-index: 3; right: max(12px, env(safe-area-inset-right, 0px)); top: calc(var(--bar-h, 76px) + 22px + env(safe-area-inset-top, 0px));
+  width: min(370px, calc(100% - 24px)); max-height: calc(100% - var(--bar-h, 76px) - 40px); overflow-y: auto;
+  background: var(--glass-strong); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 10px 10px 14px; display: grid; gap: 10px; box-shadow: var(--shadow);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.detail > :not(img) { margin-inline: 4px; }
+.detail img { width: 100%; border-radius: 9px; display: block; }
+.detail h2 { margin: 0; font-size: 0.95rem; font-weight: 700; line-height: 1.55; text-wrap: balance; }
+.detail p { margin: 0; font-size: 0.7rem; color: var(--muted); font-family: var(--font-data); line-height: 1.6; }
+.detail .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.detail button, .xbtn { font-size: 0.8rem; padding: 6px 12px; border-radius: 8px; cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--fg); }
+.detail button:hover, .xbtn:hover { border-color: var(--accent); }
+.xbtn.note-x { padding: 1px 8px; border-radius: 7px; }
+.detail button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 500; }
+.detail label { display: flex; gap: 8px; align-items: center; font-size: 0.78rem; color: var(--muted); }
+.detail input[type=range] { width: 9rem; accent-color: var(--accent); }
+.dates { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 10px; background: var(--track); }
+.detail .dates button { border: 0; padding: 5px 10px; border-radius: 7px; color: var(--muted); font-family: var(--font-data); font-size: 0.72rem; font-variant-numeric: tabular-nums; }
+.detail .dates button[aria-pressed="true"] { background: var(--glass-strong); color: var(--fg); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+.vthumbs { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 4px; }
+.detail .vthumbs button { padding: 0; border: 2px solid transparent; border-radius: 8px; flex: 0 0 auto; background: none; }
+.detail .vthumbs button[aria-pressed="true"] { border-color: var(--vel); }
+.vthumbs img { width: 64px; height: 48px; object-fit: cover; display: block; border-radius: 6px; }
+
+/* velocity pins */
+.vlabel { position: absolute; left: 0; top: 0; pointer-events: auto; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.02em;
+  background: var(--vel); color: #fff; border: 2px solid var(--glass-strong); border-radius: 999px; padding: 2px 10px; white-space: nowrap; cursor: pointer;
+  box-shadow: 0 3px 10px rgba(20, 50, 140, 0.35); transition: transform 0.15s; }
+.vlabel:hover { transform: scale(1.06); }
+.vlabel[data-tentative="true"]::after { content: "（仮）"; font-weight: 400; }
+.vlabel[aria-pressed="true"] { outline: 3px solid var(--accent); outline-offset: 1px; }
+.vel-layer { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.editbar { position: fixed; z-index: 3; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  background: var(--glass-strong); border: 1px solid var(--line); border-radius: 999px; padding: 8px 10px 8px 18px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  font-size: 0.8rem; max-width: calc(100% - 24px); box-shadow: var(--shadow); backdrop-filter: blur(14px); }
+.editbar .msg { color: var(--muted); }
+.editbar .xbtn { border-radius: 999px; }
+.overlay-photo { position: fixed; inset: 0; z-index: 1; pointer-events: none; display: grid; place-items: center; }
+.overlay-photo img { max-width: none; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media (max-width: 640px) {
+  .bar { gap: 8px 10px; padding: 8px 10px; }
+  .group .cap, .cut { font-size: 0.58rem; }
+  .seg button { padding: 5px 8px; font-size: 0.74rem; }
+  .note { font-size: 0.7rem; max-height: 9.5em; overflow-y: auto; max-width: calc(100% - 180px); }
+  .pcard { width: 80px; } .pcard img { height: 48px; }
+}
+
+/* map-page blocks: paper panels, 3px ink frames, same in light and dark (placed last so it wins) */
+:root { --paper:#F4F3EF; --ink:#1C3A7E; --hair:#93BCD6; --red:#C62422;
+  --glass:#F4F3EF; --glass-strong:#F4F3EF; --fg:#1C3A7E; --muted:#1C3A7E; --faint:#3286BE; --line:#1C3A7E; --track:transparent; --accent:#12286B; --accent-fg:#F4F3EF; --pin:#C62422; --vel:#3286BE;
+  --bg:#F4F3EF; --bg-2:#F4F3EF; --shadow:none; --r:0px; color-scheme:light;
+  --font-ui:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; --font-data:"BIZ UDGothic",ui-monospace,monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --paper:#F4F3EF; --ink:#1C3A7E; --hair:#93BCD6; --red:#C62422;
+  --glass:#F4F3EF; --glass-strong:#F4F3EF; --fg:#1C3A7E; --muted:#1C3A7E; --faint:#3286BE; --line:#1C3A7E; --track:transparent; --accent:#12286B; --accent-fg:#F4F3EF; --pin:#C62422; --vel:#3286BE;
+  --bg:#F4F3EF; --bg-2:#F4F3EF; --shadow:none; --r:0px; color-scheme:light;
+  --font-ui:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; --font-data:"BIZ UDGothic",ui-monospace,monospace; } }
+:root[data-theme="dark"] { --paper:#F4F3EF; --ink:#1C3A7E; --hair:#93BCD6; --red:#C62422;
+  --glass:#F4F3EF; --glass-strong:#F4F3EF; --fg:#1C3A7E; --muted:#1C3A7E; --faint:#3286BE; --line:#1C3A7E; --track:transparent; --accent:#12286B; --accent-fg:#F4F3EF; --pin:#C62422; --vel:#3286BE;
+  --bg:#F4F3EF; --bg-2:#F4F3EF; --shadow:none; --r:0px; color-scheme:light;
+  --font-ui:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; --font-data:"BIZ UDGothic",ui-monospace,monospace; }
+.bar, .note, .detail, .editbar, .bar-open, .compass { background:#F4F3EF !important; border:3px solid #1C3A7E !important; border-radius:0 !important; box-shadow:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+.bar { background-image:linear-gradient(90deg,#122A6B 0 42.86%,#3286BE 42.86% 71.43%,#93BCD6 71.43% 85.71%,#C62422 85.71%) !important; background-size:100% 8px !important; background-repeat:no-repeat !important; padding-top:18px !important; }
+.note, .note b { color:#1C3A7E; } .note .fine { color:#3286BE; }
+.xbtn, .bar-open { border-radius:0 !important; color:#1C3A7E; }
+.xbtn { border:1px solid #1C3A7E !important; background:#F4F3EF; }
+.pcard, .pcard img, .pcard span { border-radius:0 !important; } .pcard { border:2px solid #1C3A7E !important; background:#F4F3EF !important; }
+.compass canvas { width:84px; height:84px; }
+
+.note .gsi{display:block;margin-top:4px;font-size:.66rem;color:#1C3A7E;border-top:1px solid #93BCD6;padding-top:4px}
+</style>
+
+<div id="stage"></div>
+<div id="status">モデルを読み込み中…</div>
+<button class="bar-open" id="bar-open" hidden aria-label="操作パネルを表示">操作パネル</button>
+<header class="bar">
+  <div class="brand">
+    <h1>朔北橋の河床 3D<small id="meta"></small></h1>
+    <p class="sub">オッカバケ川 ・ 2026.10.19 調査 ・ <span id="meta2"></span></p>
+  </div>
+  <div class="group"><span class="cap">視点</span>
+  <div class="seg" role="group" aria-label="視点">
+    <button id="v-persp" data-view="persp" aria-pressed="true">斜め</button>
+    <button id="v-top" data-view="top" aria-pressed="false">上</button>
+    <button id="v-up" data-view="fromUp" aria-pressed="false">上流</button>
+    <button id="v-down" data-view="fromDown" aria-pressed="false">下流</button>
+    <button id="v-left" data-view="fromLeft" aria-pressed="false">左岸</button>
+    <button id="v-right" data-view="fromRight" aria-pressed="false">右岸</button>
+  </div></div>
+  <div class="group"><span class="cap">表示</span>
+  <div class="seg" role="group" aria-label="表示">
+    <button id="m-tex" data-mode="tex" aria-pressed="true">写真の色</button>
+    <button id="m-shade" data-mode="shade" aria-pressed="false">形だけ</button>
+  </div></div>
+  <div class="group"><span class="cap">周辺地形（地理院）</span>
+  <div class="seg" role="group" aria-label="周辺地形">
+    <button id="t-show" data-terrain="on" aria-pressed="true">表示</button>
+    <button id="t-hide" data-terrain="off" aria-pressed="false">隠す</button>
+  </div></div>
+  <div class="group"><span class="cap">撮影地点</span>
+  <div class="seg" role="group" aria-label="撮影地点">
+    <button id="p-show" data-photos="on" aria-pressed="true">表示</button>
+    <button id="p-hide" data-photos="off" aria-pressed="false">隠す</button>
+  </div></div>
+  <div class="group"><span class="cap">流速測定</span>
+  <div class="seg vel" role="group" aria-label="流速測定位置">
+    <button id="vel-toggle" aria-pressed="true">表示</button>
+    <button id="vel-edit" aria-pressed="false">位置を直す</button>
+  </div></div>
+  <label class="cut" for="cut">上を切る<span class="cut-row"><input id="cut" type="range" min="0" max="100" value="100" aria-describedby="cut-hint"><span id="cut-hint" class="cut-val">切らない</span></span></label>
+  <button class="xbtn bar-hide" id="bar-hide" aria-label="操作パネルを隠す">隠す</button>
+</header>
+<div class="note" id="note">
+  <button class="xbtn note-x" id="note-x" aria-label="説明を閉じる">×</button>
+  <b>ドラッグで回転、ピンチ・ホイールで拡大、2本指（右ドラッグ）で移動。</b><br>
+  赤いカードは撮影地点で、押すとその視点に移ります。日付のボタンがあるカードは別の日の写真と見比べられます。青いピンは流速の測定位置で、押すとその測点の写真が出ます。モデルをクリックするとカードを隠せます。<br>
+  <span class="fine">周りの地形と航空写真は国土地理院（標高5 mメッシュ・シームレス空中写真）で、位置は写真のGPSで合わせた概算です。写真150枚から復元（ぶれた写真は除外）。大きさは写真のGPSに合わせた概算で±2〜3割ずれることがあり、マス目は5 mです。水面や白波は形が安定せず、穴あきになります。</span><span class="gsi">周辺の地形と航空写真は、地理院タイル（標高タイル・シームレス空中写真）を加工して作成（出典：国土地理院）。</span>
+</div>
+<div class="overlay-photo" id="overlay" hidden><img id="overlay-img" alt=""></div>
+<div class="vel-layer" id="vel-layer"></div>
+<div class="editbar" id="editbar" hidden>
+  <span class="msg" id="edit-msg">直したい番号のピンを押してから、モデル上の正しい場所をクリックしてください。</span>
+  <button class="xbtn" id="edit-done">終わる</button>
+</div>
+<div class="photo-layer" id="photo-layer"><svg id="leaders" aria-hidden="true"></svg></div>
+<section class="detail" id="detail" hidden aria-live="polite">
+  <img id="d-img" alt="">
+  <div class="dates" id="d-dates" role="group" aria-label="撮影日" hidden></div>
+  <h2 id="d-cap"></h2>
+  <p id="d-name"></p>
+  <div class="row">
+    <button class="primary" id="d-go">この場所から見る</button>
+    <button id="d-back">全体に戻る</button>
+    <button id="d-close" aria-label="閉じる">閉じる</button>
+  </div>
+  <label for="d-op" id="d-op-row" hidden>写真を重ねる<input id="d-op" type="range" min="0" max="100" value="50"></label>
+</section>
+<section class="detail" id="vdetail" hidden aria-live="polite">
+  <img id="v-img" alt="">
+  <div class="vthumbs" id="v-thumbs" role="group" aria-label="この測点の写真"></div>
+  <h2 id="v-cap"></h2>
+  <p id="v-name"></p>
+  <div class="row"><button id="v-close">閉じる</button></div>
+</section>
+<div class="compass" aria-hidden="true"><canvas id="compass" width="96" height="96"></canvas></div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+// Model frame (prepared offline): +Y up, flow runs toward -Z (downstream = -Z), +X = right bank looking downstream.
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.localClippingEnabled = true;
+const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6);
+let yMin = 0, yMax = 1;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 1000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 1.4); sun.position.set(3, 6, 2); scene.add(sun);
+
+function themeBg() { return getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(); }
+function applyBg() { scene.background = new THREE.Color(themeBg()); }
+applyBg();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyBg);
+new MutationObserver(applyBg).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+let model, radius = 1, center = new THREE.Vector3();
+const texMats = [], shadeMat = new THREE.MeshStandardMaterial({ color: 0xb9c2c4, roughness: 0.9, metalness: 0, side: THREE.DoubleSide, clippingPlanes: [cutPlane] });
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+// Geo-reference from photo EXIF: downstream (-Z) points to bearing 63°, model units are metres (GPS-fitted, rough).
+const DOWNSTREAM_BEARING = 63.4;
+const NORTH = new THREE.Vector3(-Math.sin(THREE.MathUtils.degToRad(DOWNSTREAM_BEARING)), 0, -Math.cos(THREE.MathUtils.degToRad(DOWNSTREAM_BEARING)));
+let grid;
+
+const VIEWS = {
+  persp:     new THREE.Vector3(0.9, 0.8, 1.1),
+  top:       new THREE.Vector3(0, 1, 0.0001),
+  fromUp:    new THREE.Vector3(0, 0.25, 1),    // standing upstream (+Z), looking downstream
+  fromDown:  new THREE.Vector3(0, 0.25, -1),
+  fromLeft:  new THREE.Vector3(-1, 0.25, 0),
+  fromRight: new THREE.Vector3(1, 0.25, 0),
+};
+function setView(name, instant) {
+  const dir = VIEWS[name].clone().normalize();
+  const railK = photosOn ? Math.max(1, 1.1 * stage.clientWidth / Math.max(200, stage.clientWidth - 300)) : 1;
+  const dist = radius / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.85 * railK;
+  const to = center.clone().add(dir.multiplyScalar(dist));
+  if (name === 'top') camera.up.set(0, 0, -1); else camera.up.set(0, 1, 0);
+  controls.target.copy(center);
+  document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === name)));
+  if (instant) { camera.position.copy(to); controls.update(); return; }
+  const from = camera.position.clone(), t0 = performance.now();
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  (function step(now) {
+    const k = reduce ? 1 : Math.min(1, (now - t0) / 600), e = 1 - Math.pow(1 - k, 3);
+    camera.position.lerpVectors(from, to, e); controls.update();
+    if (k < 1) requestAnimationFrame(step);
+  })(t0);
+}
+window.setView = setView;
+document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+
+function setMode(mode) {
+  if (!model) return;
+  let i = 0;
+  model.traverse(o => { if (o.isMesh) { o.material = mode === 'tex' ? texMats[i] : shadeMat; i++; } });
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+}
+window.setMode = setMode;
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+// The artifact frame blocks fetch() of data:/blob: URLs, so the GLB arrives base64-wrapped in a JSON file
+// and textures go through <img> (TextureLoader) instead of fetch-based ImageBitmapLoader.
+window.createImageBitmap = undefined;
+fetch('model.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(j => {
+  const bin = atob(j.glb), buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  new GLTFLoader().parse(buf.buffer, '', onModel, onError);
+}).catch(onError);
+function onError(err) {
+  document.getElementById('status').textContent = 'モデルを読み込めませんでした。ページを再読み込みしてください。';
+  console.error(err);
+}
+function onModel(gltf) {
+  model = gltf.scene; scene.add(model);
+  let faces = 0;
+  model.traverse(o => {
+    if (o.isMesh) {
+      o.material.side = THREE.DoubleSide; o.material.clippingPlanes = [cutPlane]; texMats.push(o.material);
+      o.geometry.computeVertexNormals();
+      faces += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+    }
+  });
+  const box = new THREE.Box3().setFromObject(model), sph = box.getBoundingSphere(new THREE.Sphere());
+  center.copy(sph.center); radius = sph.radius * 0.75; yMin = box.min.y; yMax = box.max.y;
+  const gs = Math.ceil(Math.max(box.max.x - box.min.x, box.max.z - box.min.z) / 10) * 10 + 10;
+  grid = new THREE.GridHelper(gs, gs / 5, 0x7f9aa3, 0xa9bcc2);
+  grid.material.transparent = true; grid.material.opacity = 0.45;
+  grid.position.set(center.x, box.min.y + (box.max.y - box.min.y) * 0.08, center.z); scene.add(grid);
+  camera.near = radius / 200; camera.far = radius * 50; camera.updateProjectionMatrix();
+  document.getElementById('meta2').textContent = `約 ${Math.round(box.max.z - box.min.z)} m × ${Math.round(box.max.x - box.min.x)} m`;
+  document.getElementById('status').hidden = true;
+  setView('persp', true);
+  applyVelData();
+  loadTerrain();
+  window.__ready = true;
+}
+
+// Sea beyond the reconstructed area. The mouth was too far away in the photos to rebuild, so its
+// place is estimated: the sea-facing photos (IMG_6624, 6633, 6635) were taken 10–15 m below the bridge
+// by GPS and show the shoreline about 30–40 m further on, so the sea starts near z = -48.
+const SEA_Z = -48;
+function addSea(box) {
+  const g = new THREE.Group(), wl = -2.0;
+  const beach = new THREE.Mesh(new THREE.PlaneGeometry(90, box.min.z + 6 - SEA_Z).rotateX(-Math.PI / 2),
+    new THREE.MeshStandardMaterial({ color: 0x9c968c, roughness: 1, clippingPlanes: [cutPlane] }));
+  beach.position.set(center.x, wl + 0.15, (box.min.z + 6 + SEA_Z) / 2); g.add(beach);
+  const sea = new THREE.Mesh(new THREE.PlaneGeometry(200, 120).rotateX(-Math.PI / 2),
+    new THREE.MeshStandardMaterial({ color: 0x3f7391, roughness: 0.35, metalness: 0.1, clippingPlanes: [cutPlane] }));
+  sea.position.set(center.x, wl, SEA_Z - 60); g.add(sea);
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 128;
+  const x = cv.getContext('2d'); x.fillStyle = 'rgba(255,255,255,0.92)'; x.beginPath(); x.roundRect(8, 8, 496, 112, 24); x.fill();
+  x.fillStyle = '#1d3a4a'; x.font = "700 60px sans-serif"; x.textAlign = "center"; x.fillText("海", 256, 62);
+  x.font = "34px sans-serif"; x.fillText("位置は写真とGPSから推定", 256, 106);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthTest: false }));
+  sp.scale.set(24, 6, 1); sp.position.set(center.x, wl + 7, SEA_Z - 15); sp.renderOrder = 5; g.add(sp);
+  scene.add(g);
+}
+
+// Surrounding terrain from GSI (国土地理院) 5 m DEM + seamless aerial photo, placed by the photo-GPS fit.
+// Its height is matched to the model at the river (the DEM's lowest point near the bridge = model water level).
+let terrain = null, terrainOn = true;
+function loadTerrain() {
+  fetch('terrain.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(j => {
+    const bin = atob(j.glb), buf = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    new GLTFLoader().parse(buf.buffer, '', g => {
+      terrain = g.scene;
+      terrain.traverse(o => { if (o.isMesh) { const m = o.material; m.side = THREE.DoubleSide; m.clippingPlanes = [cutPlane];
+        m.polygonOffset = true; m.polygonOffsetFactor = 2; m.polygonOffsetUnits = 4;
+        // keep it a quiet backdrop: half-transparent, mostly desaturated, never hiding the model
+        m.transparent = true; m.opacity = 0.42; m.depthWrite = false;
+        m.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>',
+          '#include <map_fragment>\n  diffuseColor.rgb = mix(vec3(dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114))), diffuseColor.rgb, 0.3);'); }; o.geometry.computeVertexNormals(); o.renderOrder = -1; } });
+      terrain.position.y = -0.25; scene.add(terrain); setTerrain(terrainOn);
+    }, e => console.error(e));
+  }).catch(e => console.error(e));
+}
+function setTerrain(on) { terrainOn = on; if (terrain) terrain.visible = on; if (grid) grid.visible = !on;
+  document.querySelectorAll('[data-terrain]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.terrain === 'on') === on))); }
+document.querySelectorAll('[data-terrain]').forEach(b => b.addEventListener('click', () => setTerrain(b.dataset.terrain === 'on')));
+
+// Flow compass: arrow shows downstream direction as seen from the current camera.
+const cc = document.getElementById('compass').getContext('2d');
+function drawCompass() {
+  const s = getComputedStyle(document.documentElement);
+  const fg = s.getPropertyValue('--fg').trim(), acc = s.getPropertyValue('--accent').trim(), panel = s.getPropertyValue('--glass-strong').trim(), line = s.getPropertyValue('--line').trim();
+  cc.clearRect(0, 0, 96, 96);
+  cc.fillStyle = panel; cc.strokeStyle = line; cc.fillRect(0, 0, 96, 96);
+  const q = camera.quaternion.clone().invert();
+  const nd = NORTH.clone().applyQuaternion(q), nl = Math.hypot(nd.x, nd.y);
+  if (nl > 0.15) { cc.fillStyle = s.getPropertyValue('--muted').trim(); cc.font = '700 11px ' + s.getPropertyValue('--font-ui'); cc.textAlign = 'center';
+    cc.fillText('N', 48 + nd.x / nl * 36, 48 - nd.y / nl * 36 + 4); }
+  const d = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
+  const len = Math.hypot(d.x, d.y);
+  cc.fillStyle = fg; cc.font = '11px ' + s.getPropertyValue('--font-ui'); cc.textAlign = 'center';
+  if (len < 0.15) { cc.fillText('流れは', 48, 44); cc.fillText('奥/手前', 48, 60); return; }
+  const ux = d.x / len, uy = -d.y / len;
+  cc.strokeStyle = acc; cc.fillStyle = acc; cc.lineWidth = 3;
+  cc.beginPath(); cc.moveTo(48 - ux * 20, 44 - uy * 20); cc.lineTo(48 + ux * 16, 44 + uy * 16); cc.stroke();
+  cc.beginPath(); const ax = 48 + ux * 24, ay = 44 + uy * 24;
+  cc.moveTo(ax, ay); cc.lineTo(ax - ux * 12 - uy * 7, ay - uy * 12 + ux * 7); cc.lineTo(ax - ux * 12 + uy * 7, ay - uy * 12 - ux * 7); cc.fill();
+  cc.fillStyle = fg; cc.fillText('下流', 48, 84);
+}
+
+// ---- Photo points: frustum in 3D + thumbnail card with a leader line; click flies the camera to the photo pose.
+const layer = document.getElementById('photo-layer'), leaders = document.getElementById('leaders');
+const detail = document.getElementById('detail'), overlay = document.getElementById('overlay'), overlayImg = document.getElementById('overlay-img');
+const pins = []; let photosOn = true, current = null, inPhotoView = false;
+const pinGroup = new THREE.Group(); scene.add(pinGroup);
+function pinColor() { return new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--pin').trim()); }
+function buildPins(list) {
+  const mat = new THREE.LineBasicMaterial({ color: pinColor(), transparent: true, opacity: 0.4 });
+  const dotMat = new THREE.MeshBasicMaterial({ color: pinColor() });
+  list.forEach(p => {
+    const X = new THREE.Vector3(...p.x), Y = new THREE.Vector3(...p.y), Z = new THREE.Vector3(...p.z), P = new THREE.Vector3(...p.pos);
+    const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(X, Y, Z));
+    const L = 1.6, hy = Math.tan(THREE.MathUtils.degToRad(p.fov / 2)) * L, hx = hy * p.aspect;
+    const c = [[-hx, -hy, -L], [hx, -hy, -L], [hx, hy, -L], [-hx, hy, -L]];
+    const v = []; c.forEach((a, i) => { const b = c[(i + 1) % 4]; v.push(0, 0, 0, ...a, ...a, ...b); });
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+    const fr = new THREE.LineSegments(g, mat); fr.position.copy(P); fr.quaternion.copy(q); pinGroup.add(fr);
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 8), dotMat); dot.position.copy(P); pinGroup.add(dot);
+    const card = document.createElement('button'); card.className = 'pcard'; card.type = 'button';
+    card.setAttribute('aria-label', `${p.k}. ${p.cap}`);
+    card.innerHTML = `<img src="${p.src}" alt=""><span>${p.k}</span>`;
+    card.addEventListener('click', () => openPhoto(pe));
+    card.addEventListener('pointerenter', () => line.classList.add('hot'));
+    card.addEventListener('pointerleave', () => { if (current !== pe) line.classList.remove('hot'); });
+    layer.appendChild(card);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline'); line.setAttribute('class', 'leader'); leaders.appendChild(line);
+    const pe = { p, P, q, card, line, dot }; pins.push(pe);
+  });
+}
+function openPhoto(pe) {
+  current = pe; pins.forEach(o => { o.card.setAttribute('aria-current', String(o === pe)); o.line.classList.toggle('hot', o === pe); });
+  document.getElementById('d-img').src = pe.p.src; document.getElementById('d-cap').textContent = `${pe.p.k}. ${pe.p.cap}`;
+  document.getElementById('d-name').textContent = pe.p.name + (pe.p.approx ? '（位置はGPSから推定、誤差 約5〜10 m）' : '');
+  const dd = document.getElementById('d-dates'); dd.replaceChildren();
+  const sets = [{ src: pe.p.src, date: pe.p.date || '2026/10/19', note: pe.p.name }].concat(pe.p.compare || []);
+  dd.hidden = sets.length < 2;
+  sets.forEach((c, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = c.date; b.setAttribute('aria-pressed', String(i === 0));
+    b.addEventListener('click', () => {
+      document.getElementById('d-img').src = c.src; overlayImg.src = c.src;
+      document.getElementById('d-name').textContent = c.note || '';
+      dd.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    });
+    dd.appendChild(b);
+  });
+  vdetail.hidden = true; detail.hidden = false;
+}
+function flyTo(pos, quat, fov, done) {
+  const p0 = camera.position.clone(), q0 = camera.quaternion.clone(), f0 = camera.fov, t0 = performance.now();
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; controls.enabled = false;
+  (function step(now) {
+    const k = reduce ? 1 : Math.min(1, (now - t0) / 900), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    camera.position.lerpVectors(p0, pos, e); camera.quaternion.slerpQuaternions(q0, quat, e);
+    camera.fov = f0 + (fov - f0) * e; camera.updateProjectionMatrix();
+    if (k < 1) requestAnimationFrame(step); else done && done();
+  })(t0);
+}
+function enterPhotoView() {
+  if (!current) return; const pe = current;
+  inPhotoView = true; flying = true; pinGroup.visible = false; layer.hidden = true;
+  flyTo(pe.P, pe.q, pe.p.fov, () => {
+    flying = false;
+    overlayImg.src = pe.p.src; overlay.hidden = false; sizeOverlay();
+    document.getElementById('d-op-row').hidden = false; applyOpacity();
+    // orbit around a point in front of the photo camera so dragging looks around from there
+    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(pe.q);
+    controls.target.copy(pe.P).addScaledVector(fwd, 0.5); controls.enabled = true;
+  });
+}
+function leavePhotoView() {
+  overlay.hidden = true; document.getElementById('d-op-row').hidden = true; inPhotoView = false;
+  pinGroup.visible = photosOn; layer.hidden = !photosOn;
+  camera.fov = 45; camera.updateProjectionMatrix(); controls.enabled = true; setView('persp');
+}
+function sizeOverlay() {
+  if (!current) return; const h = stage.clientHeight, w = h * current.p.aspect * Math.tan(THREE.MathUtils.degToRad(current.p.fov / 2)) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  overlayImg.style.height = h + 'px'; overlayImg.style.width = w + 'px';
+}
+function applyOpacity() { overlayImg.style.opacity = document.getElementById('d-op').value / 100; }
+let flying = false;
+document.getElementById('d-go').addEventListener('click', enterPhotoView);
+document.getElementById('d-back').addEventListener('click', leavePhotoView);
+document.getElementById('d-close').addEventListener('click', () => { detail.hidden = true; if (inPhotoView) leavePhotoView(); pins.forEach(o => { o.card.setAttribute('aria-current', 'false'); o.line.classList.remove('hot'); }); current = null; });
+document.getElementById('d-op').addEventListener('input', applyOpacity);
+controls.addEventListener('start', () => { if (inPhotoView && !flying) { overlay.hidden = true; } });
+addEventListener('resize', sizeOverlay);
+function setPhotos(on) {
+  photosOn = on; pinGroup.visible = on; layer.hidden = !on;
+  document.querySelectorAll('[data-photos]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.photos === 'on') === on)));
+}
+document.querySelectorAll('[data-photos]').forEach(b => b.addEventListener('click', () => setPhotos(b.dataset.photos === 'on')));
+// A click (not a drag) on the 3D view toggles the photo points on and off.
+let downAt = null;
+renderer.domElement.addEventListener('pointerdown', e => { downAt = [e.clientX, e.clientY, performance.now()]; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!downAt || inPhotoView) return;
+  const moved = Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]), dt = performance.now() - downAt[2]; downAt = null;
+  if (moved < 6 && dt < 400) {
+    if (editing) { placeVel(e); return; }
+    setPhotos(!photosOn); if (!photosOn) { detail.hidden = true; current = null; }
+  }
+});
+document.getElementById('note-x').addEventListener('click', () => { document.getElementById('note').hidden = true; });
+window.openPhotoK = k => { const pe = pins.find(o => o.p.k === k); if (pe) { openPhoto(pe); } };
+window.enterPhotoView = enterPhotoView;
+
+const tmpV = new THREE.Vector3();
+// Cards sit in two rails at the screen edges (outside the model), ordered top-to-bottom by their marker,
+// and connect to the marker with an elbow leader so they never cover the model itself.
+function layoutCards() {
+  if (!photosOn || inPhotoView || !pins.length) return;
+  const w = stage.clientWidth, h = stage.clientHeight, cw = pins[0].card.offsetWidth || 112, ch = pins[0].card.offsetHeight || 76;
+  const barEl = document.querySelector('.bar'), top = barEl.getBoundingClientRect().bottom + 12;
+  document.documentElement.style.setProperty('--bar-h', barEl.offsetHeight + 'px');
+  const noteEl = document.querySelector('.note');
+  const botL = h - (noteEl.hidden ? 0 : noteEl.offsetHeight + 24) - 8, botR = h - 120;
+  const items = [];
+  pins.forEach(pe => {
+    // keep the photo-point dot at about 6 px radius on screen, never larger than its original size
+    if (pe.dot) pe.dot.scale.setScalar(Math.min(1, 6 * 2 * camera.position.distanceTo(pe.P) * Math.tan(camera.fov * Math.PI / 360) / (innerHeight * 0.28)));
+    tmpV.copy(pe.P).project(camera);
+    const sx = (tmpV.x + 1) / 2 * w, sy = (1 - tmpV.y) / 2 * h;
+    const vis = tmpV.z < 1 && tmpV.z > -1 && sx > -20 && sx < w + 20 && sy > top - 20 && sy < h + 20;
+    if (!vis) { pe.card.hidden = true; pe.line.setAttribute('points', ''); return; }
+    pe.card.hidden = false; items.push({ pe, sx, sy });
+  });
+  if (!items.length) return;
+  // split by the median screen x so each rail gets about half
+  const xs = items.map(i => i.sx).sort((p, q) => p - q), mid = xs[Math.floor((xs.length - 1) / 2)];
+  let L = items.filter(i => i.sx <= mid), R = items.filter(i => i.sx > mid);
+  const fit = (bot) => Math.max(1, Math.floor((bot - top + 8) / (ch + 8)));
+  while (L.length > fit(botL) && R.length < fit(botR)) { L.sort((p, q) => q.sx - p.sx); R.push(L.shift()); }
+  while (R.length > fit(botR) && L.length < fit(botL)) { R.sort((p, q) => p.sx - q.sx); L.push(R.shift()); }
+  const place = (col, side, bot) => {
+    col.sort((p, q) => p.sy - q.sy);
+    const n = col.length, gap = 8, need = n * ch + (n - 1) * gap;
+    const step = need > bot - top ? (bot - top - ch) / Math.max(1, n - 1) : ch + gap;
+    // ideal: card centred on its marker; then push down to clear the previous, then pull up from the bottom
+    let ys = col.map(it => Math.min(bot - ch, Math.max(top, it.sy - ch / 2)));
+    for (let i = 1; i < n; i++) ys[i] = Math.max(ys[i], ys[i - 1] + step);
+    if (n && ys[n - 1] > bot - ch) { ys[n - 1] = bot - ch; for (let i = n - 2; i >= 0; i--) ys[i] = Math.min(ys[i], ys[i + 1] - step); }
+    col.forEach((it, i) => {
+      const cx = side === 'L' ? 10 : w - cw - 10, cy = ys[i];
+      it.pe.card.style.transform = `translate(${cx}px, ${cy}px)`;
+      const ax = side === 'L' ? cx + cw : cx, ay = cy + ch / 2, ex = side === 'L' ? ax + 18 : ax - 18;
+      it.pe.line.setAttribute('points', `${ax},${ay} ${ex},${ay} ${it.sx},${it.sy}`);
+    });
+  };
+  place(L, 'L', botL); place(R, 'R', botR);
+}
+fetch('photos.json').then(r => r.json()).then(buildPins).catch(e => console.error(e));
+
+// ---- Velocity measurement points: stored in the artifact's shared db (collection "velpoints"), so corrections persist.
+const velLayer = document.getElementById('vel-layer'), velGroup = new THREE.Group(); scene.add(velGroup);
+let velOn = true, editing = false, velSel = null, velDb = null; const vels = new Map();
+const ray = new THREE.Raycaster();
+function velColor() { return new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--vel').trim()); }
+function groundAt(x, z) {
+  // cast upward from below the model so the bridge deck above is never hit first
+  if (!model) return null;
+  ray.set(new THREE.Vector3(x, yMin - 1, z), new THREE.Vector3(0, 1, 0)); ray.far = yMax - yMin + 2;
+  const hit = ray.intersectObject(model, true)[0]; return hit ? hit.point.y : null;
+}
+function upsertVel(id, d) {
+  let v = vels.get(id);
+  if (!v) {
+    const mat = new THREE.MeshBasicMaterial({ color: velColor() });
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.2, 8), mat);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 10), mat);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.4, 10), mat); tip.rotation.x = Math.PI;
+    const g = new THREE.Group(); g.scale.setScalar(1.8); pole.position.y = 1.1; head.position.y = 2.25; tip.position.y = 0.2; g.add(pole, head, tip); velGroup.add(g);
+    const label = document.createElement('button'); label.type = 'button'; label.className = 'vlabel';
+    label.addEventListener('click', () => { if (editing) selectVel(id); else openVel(id); });
+    velLayer.appendChild(label);
+    v = { g, label, d: null }; vels.set(id, v);
+  }
+  v.d = d;
+  const y = (typeof d.y === 'number') ? d.y : groundAt(d.x, d.z);
+  v.g.position.set(d.x, y ?? yMin, d.z);
+  v.label.textContent = d.label || id; v.label.dataset.tentative = String(!!d.tentative);
+  v.label.title = d.note || '';
+}
+const vdetail = document.getElementById('vdetail'); let velMedia = {};
+fetch('vel_media.json').then(r => r.json()).then(m => { velMedia = m; }).catch(e => console.error(e));
+function openVel(id) {
+  const v = vels.get(id), list = velMedia[id] || []; if (!v) return;
+  document.getElementById('v-cap').textContent = `${v.d.label || id} の測定の様子`;
+  const th = document.getElementById('v-thumbs'); th.replaceChildren();
+  const show = (m, b) => { document.getElementById('v-img').src = m.src; document.getElementById('v-name').textContent = m.name + (m.note ? '　' + m.note : '');
+    th.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); };
+  list.forEach((m, i) => { const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', m.name);
+    b.innerHTML = `<img src="${m.src}" alt="">`; b.addEventListener('click', () => show(m, b)); th.appendChild(b); if (i === 0) show(m, b); });
+  if (!list.length) { document.getElementById('v-img').removeAttribute('src'); document.getElementById('v-name').textContent = 'この測点の写真はまだありません。'; }
+  detail.hidden = true; vdetail.hidden = false;
+}
+document.getElementById('v-close').addEventListener('click', () => { vdetail.hidden = true; });
+function removeVel(id) { const v = vels.get(id); if (!v) return; velGroup.remove(v.g); v.label.remove(); vels.delete(id); }
+function selectVel(id) {
+  velSel = id; vels.forEach((v, k) => v.label.setAttribute('aria-pressed', String(k === id)));
+  document.getElementById('edit-msg').textContent = `「${vels.get(id).d.label}」を置く場所をモデル上でクリックしてください。`;
+}
+async function placeVel(e) {
+  if (!velSel || !model) return;
+  const r = renderer.domElement.getBoundingClientRect();
+  const ndc = new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera); ray.far = Infinity;
+  const hit = ray.intersectObject(model, true).find(h => cutPlane.distanceToPoint(h.point) >= 0);
+  if (!hit) return;
+  const id = velSel, d = { ...vels.get(id).d, x: hit.point.x, y: hit.point.y, z: hit.point.z, tentative: false };
+  upsertVel(id, d);
+  const msg = document.getElementById('edit-msg');
+  if (!velDb) { msg.textContent = 'この画面では保存できません（表示だけ変わりました）。'; return; }
+  try { await velDb.doc('velpoints/' + id).update({ x: d.x, y: d.y, z: d.z, tentative: false }); msg.textContent = `「${d.label}」の位置を保存しました。続けて別のピンも直せます。`; }
+  catch (err) { msg.textContent = err && err.code === 'permission_denied' ? '保存する権限がありません（表示だけ変わりました）。' : '保存できませんでした。もう一度クリックしてください。'; }
+}
+function setEditing(on) {
+  editing = on; document.getElementById('editbar').hidden = !on; document.getElementById('vel-edit').setAttribute('aria-pressed', String(on));
+  if (on) { setVel(true); if (photosOn) setPhotos(false); document.getElementById('edit-msg').textContent = '直したい番号のピンを押してから、モデル上の正しい場所をクリックしてください。'; }
+  velSel = null; vels.forEach(v => v.label.setAttribute('aria-pressed', 'false'));
+}
+function setVel(on) { velOn = on; velGroup.visible = on; velLayer.hidden = !on; document.getElementById('vel-toggle').setAttribute('aria-pressed', String(on)); }
+document.getElementById('vel-toggle').addEventListener('click', () => setVel(!velOn));
+document.getElementById('vel-edit').addEventListener('click', () => setEditing(!editing));
+document.getElementById('edit-done').addEventListener('click', () => setEditing(false));
+function layoutVel() {
+  if (!velOn) return; const w = stage.clientWidth, h = stage.clientHeight;
+  vels.forEach(v => {
+    tmpV.set(0, 2.25 * 1.8, 0).add(v.g.position).project(camera);
+    if (tmpV.z >= 1 || tmpV.z <= -1) { v.label.hidden = true; return; }
+    v.label.hidden = false;
+    v.label.style.transform = `translate(${(tmpV.x + 1) / 2 * w - v.label.offsetWidth / 2}px, ${(1 - tmpV.y) / 2 * h - v.label.offsetHeight - 14}px)`;
+  });
+}
+let velData = new Map();
+function applyVelData() { if (!model) return; velData.forEach((d, id) => upsertVel(id, d)); }
+(async () => {
+  try {
+    velDb = await window.claude?.use?.('db');
+    if (!velDb) { const r = await fetch('velpoints.json'); if (r.ok) window.__setVelData(await r.json()); return; }
+    velDb.collection('velpoints').onSnapshot(snap => {
+      snap.docChanges().forEach(ch => {
+        if (ch.type === 'removed') { velData.delete(ch.doc.id); removeVel(ch.doc.id); }
+        else velData.set(ch.doc.id, ch.doc.data());
+      });
+      applyVelData();
+    }, err => console.error(err));
+  } catch (e) { console.error(e); }
+})();
+window.__setVelData = list => { list.forEach(d => velData.set(d.id, d)); applyVelData(); };
+
+const cut = document.getElementById('cut'), cutHint = document.getElementById('cut-hint');
+function applyCut() {
+  const k = cut.value / 100;
+  cutPlane.constant = k >= 1 ? 1e6 : yMin + (yMax - yMin) * k;
+  cutHint.textContent = k >= 1 ? '切らない' : `下から ${Math.round(k * 100)}%`;
+}
+window.setCut = v => { cut.value = v; applyCut(); };
+cut.addEventListener('input', applyCut);
+
+renderer.setAnimationLoop(() => { if (!flying) controls.update(); renderer.render(scene, camera); drawCompass(); layoutCards(); layoutVel(); });
+
+// top panel can be hidden to see more of the model; remembered per viewer
+const barEl0 = document.querySelector('.bar'), barOpen = document.getElementById('bar-open');
+function setBar(show) { barEl0.hidden = !show; barOpen.hidden = show; try { localStorage.setItem('barHidden', show ? '0' : '1'); } catch (e) {} }
+document.getElementById('bar-hide').addEventListener('click', () => setBar(false));
+barOpen.addEventListener('click', () => setBar(true));
+try { if (localStorage.getItem('barHidden') === '1') setBar(false); } catch (e) {}
+</script>
+</body></html>
