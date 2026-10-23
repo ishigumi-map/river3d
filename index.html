@@ -462,14 +462,16 @@ function zoomAt(cx, cy, f) {
 }
 svg.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.exp(e.deltaY * 0.0015)); }, { passive: false });
 addEventListener('resize', apply);
-const vEl = document.getElementById('viewer'), vFrame = document.getElementById('vframe');
+const vEl = document.getElementById('viewer');
+let vFrame = document.getElementById('vframe');
 let scrollBack = 0;
 let vSite = null;
 function showMode(mode) {
   const s = vSite, board = mode === 'board';
   document.getElementById('vboard').hidden = !board; vFrame.hidden = board;
   if (board) { const im = document.getElementById('vbimg'); im.src = s.board; im.alt = `No.${s.no} ${s.name} の紹介ボード`; document.getElementById('vboard').scrollTop = 0; }
-  else if (vFrame.dataset.id !== s.id) { vFrame.src = pageFor(s); vFrame.dataset.id = s.id; }
+  else if (vFrame.dataset.id !== s.id) { /* a fresh iframe each time: changing src would add an entry to the shared history, and the back button would then rewind the 3D page instead of closing the viewer */
+    const f = vFrame.cloneNode(false); f.src = pageFor(s); f.dataset.id = s.id; vFrame.replaceWith(f); vFrame = f; }
   const b = document.getElementById('vmode'); b.hidden = !(s.board && s.model);
   b.textContent = board ? '3Dモデルを見る' : '紹介ボードを見る'; b.dataset.to = board ? '3d' : 'board';
 }
