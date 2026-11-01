@@ -341,15 +341,34 @@ function apply() { svg.setAttribute('viewBox', vb.map(v => v.toFixed(3)).join(' 
    detailed 一級・二級; closer still adds 準用河川 and unnamed streams (沢). Files are integer deltas at q, drawn inside scale(q). */
 const rivG = document.getElementById('rivg'), RIV = {}, RIV_JAPAN = 120, RIV_WIDE = 40, RIV_SAWA = 12;
 let rivBox = null;
-function rivPath(j, cls) {
-  let d = '';
-  for (const l of j.l) { d += 'M' + l[0] + ' ' + l[1]; if (l.length > 2) d += 'l' + l.slice(2).join(' '); }
-  const g = document.createElementNS(NS, 'g'), p = document.createElementNS(NS, 'path');
-  g.setAttribute('transform', `scale(${j.q})`); p.setAttribute('class', cls); p.setAttribute('d', d.replace(/ -/g, '-'));
-  g.appendChild(p); g.hidden = true; rivG.appendChild(g); return g;
+/* Each file is split into square tiles (by each line's bbox centre) and only the tiles in view are drawn, built on first show:
+   one path for a whole prefecture's 沢 made every pan repaint ~170k points. */
+const RIV_TILE = { rjapan: 10, ra: 5, rb: 2 };
+function rivPath(j, cls, T) {
+  const q = j.q, tiles = new Map();
+  for (const l of j.l) {
+    let x = l[0], y = l[1], x0 = x, x1 = x, y0 = y, y1 = y;
+    for (let i = 2; i < l.length; i += 2) { x += l[i]; y += l[i + 1]; if (x < x0) x0 = x; else if (x > x1) x1 = x; if (y < y0) y0 = y; else if (y > y1) y1 = y; }
+    const k = Math.floor((x0 + x1) / 2 * q / T) + ',' + Math.floor((y0 + y1) / 2 * q / T);
+    let t = tiles.get(k); if (!t) tiles.set(k, t = { bb: [x0 * q, y0 * q, x1 * q, y1 * q], l: [], p: null });
+    t.l.push(l); const b = t.bb; b[0] = Math.min(b[0], x0 * q); b[1] = Math.min(b[1], y0 * q); b[2] = Math.max(b[2], x1 * q); b[3] = Math.max(b[3], y1 * q);
+  }
+  const g = document.createElementNS(NS, 'g');
+  g.setAttribute('transform', `scale(${q})`); g.hidden = true; g.tiles = [...tiles.values()]; g.cls = cls; rivG.appendChild(g); return g;
+}
+function rivShow(g) {
+  for (const t of g.tiles) {
+    const b = t.bb, on = b[0] < vb[0] + vb[2] && b[2] > vb[0] && b[1] < vb[1] + vb[3] && b[3] > vb[1];
+    if (on && !t.p) {
+      let d = ''; for (const l of t.l) { d += 'M' + l[0] + ' ' + l[1]; if (l.length > 2) d += 'l' + l.slice(2).join(' '); }
+      t.p = document.createElementNS(NS, 'path'); t.p.setAttribute('class', g.cls); t.p.setAttribute('d', d.replace(/ -/g, '-')); t.l = null; g.appendChild(t.p);
+    }
+    if (t.p && t.p.hidden === on) t.p.hidden = !on;
+  }
 }
 function rivGet(key, cls) {
-  if (!RIV[key]) RIV[key] = fetch(`rivers/${key}.json`).then(r => r.json()).then(j => { if (j.bbox) rivBox = j.bbox; RIV[key] = rivPath(j, cls); drawRivers(); return RIV[key]; }).catch(e => { console.error(e); });
+  if (!RIV[key]) RIV[key] = fetch(`rivers/${key}.json`).then(r => r.json()).then(j => { if (j.bbox) rivBox = j.bbox;
+    RIV[key] = rivPath(j, cls, key === 'rjapan1' ? 1e4 : key === 'rjapan' ? RIV_TILE.rjapan : RIV_TILE[cls]); drawRivers(); return RIV[key]; }).catch(e => { console.error(e); });
   return RIV[key] instanceof Element ? RIV[key] : null;
 }
 function drawRivers() {
@@ -359,7 +378,7 @@ function drawRivers() {
     if (b[0] < vb[0] + vb[2] && b[2] > vb[0] && b[1] < vb[1] + vb[3] && b[3] > vb[1]) { want.add(`r${pref}a`); if (w <= RIV_SAWA) want.add(`r${pref}b`); }
   if (!rivBox) rivGet('rjapan1', 'ra');
   for (const k of want) rivGet(k, k.endsWith('b') ? 'rb' : 'ra');
-  for (const [k, g] of Object.entries(RIV)) if (g instanceof Element) g.hidden = !want.has(k);
+  for (const [k, g] of Object.entries(RIV)) if (g instanceof Element) { g.hidden = !want.has(k); if (!g.hidden) rivShow(g); }
 }
 function animateTo(t) {
   const f = vb.slice(), t0 = performance.now(), reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
