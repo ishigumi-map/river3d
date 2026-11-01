@@ -37,7 +37,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15
 .mapbox svg{width:100%;height:100%;display:block;cursor:grab}
 .mapbox svg.drag{cursor:grabbing}
 .riv path{fill:none;stroke:var(--blue);stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
-.riv .a{stroke-width:2.6}.riv .b{stroke-width:1.4;opacity:.9}.riv .c{stroke-width:1;opacity:.85}
+.riv .a{stroke-width:2.6}.riv .b{stroke-width:1.4;opacity:.9}.riv .c{stroke-width:1;opacity:.85}.riv .o{stroke-width:.8;opacity:.3}
 .rl text{fill:var(--navy);font-family:var(--ui);font-weight:700;paint-order:stroke;stroke:var(--paper);stroke-width:3px;stroke-linejoin:round;pointer-events:none;letter-spacing:.08em}
 .pin rect{fill:var(--ink);stroke:var(--paper);vector-effect:non-scaling-stroke;stroke-width:1.5;cursor:pointer}
 .pin text{pointer-events:none}
@@ -50,6 +50,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15
 .scale i{display:block;height:5px;border:1px solid var(--ink);border-top:0;margin-top:1px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;padding:6px 12px;border-top:1px solid var(--rule);font-size:.72rem}
 .legend span{display:inline-flex;align-items:center;gap:6px}
+.legend span[hidden]{display:none}
 .legend i{display:inline-block;width:22px;border-top:2.6px solid var(--blue)}
 .legend i.b{border-top-width:1.4px}.legend i.c{border-top-width:.8px;opacity:.6}
 .list{display:flex;flex-direction:column;gap:1em}
@@ -91,7 +92,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15
     <div class="north" aria-hidden="true"><svg viewBox="0 0 20 28" width="18" height="25"><path d="M10 1 L17 26 L10 20 L3 26 Z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M10 1 L10 20 L3 26 Z" fill="currentColor"/></svg><br>N</div>
     <div class="scale" aria-hidden="true"><span id="scale-t"></span><i id="scale-b"></i></div>
    </div>
-   <div class="legend"><span><i></i>一級河川（国の管理区間）</span><span><i class="b"></i>一級河川（都県の管理区間）</span><span><i class="c"></i>そのほかの川・沢</span></div>
+   <div class="legend"><span><i></i>一級河川（国の管理区間）</span><span><i class="b"></i>一級河川（都県の管理区間）</span><span><i class="c"></i>そのほかの川・沢</span><span id="lg-o" hidden><i class="c" style="opacity:.3"></i>流域の外の川</span></div>
   </div>
   <div class="list" id="list"></div>
  </div>
@@ -100,32 +101,55 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15
 </div>
 <script>
 /* Each basin: rivers from 国土数値情報 W05 for one 水系 (file: k units per degree, x scaled by cos(lat)), places from the videos' GPS. */
+/* filled from the shared albums by gen.py: v = video file stem in v/, with its encoded size */
+const PLACES = {
+  tama: [
+    { no: 'T1', name: '多摩川上流（柚木町・下手）', place: '東京都青梅市柚木町三丁目', flow: ['多摩川'], date: '2026-07-12', lat: 35.8009, lon: 139.1853,
+      v: [{ f: 'u0', w: 1920, h: 1080 }] },
+    { no: 'T2', name: '多摩川上流（柚木町）', place: '東京都青梅市柚木町三丁目', flow: ['多摩川'], date: '2026-07-12', lat: 35.8036, lon: 139.1862,
+      v: [{ f: 'u5', w: 1080, h: 1920 }, { f: 'u6', w: 1920, h: 1080 }, { f: 'u7', w: 1920, h: 1080 }, { f: 'u8', w: 1920, h: 1080 }, { f: 'u10', w: 1920, h: 1080 }] },
+    { no: 'T3', name: '多摩川上流（柚木町・上手）', place: '東京都青梅市柚木町三丁目', flow: ['多摩川'], date: '2026-07-12', lat: 35.8048, lon: 139.1885,
+      v: [{ f: 'u15', w: 1920, h: 1080 }, { f: 'u16', w: 1080, h: 1920 }, { f: 'u18', w: 1080, h: 1920 }, { f: 'u19', w: 1080, h: 1920 }, { f: 'u21', w: 1920, h: 1080 }, { f: 'u22', w: 1920, h: 1080 }] },
+    { no: 'T4', name: '多摩川上流（沢井）', place: '東京都青梅市沢井二丁目', flow: ['多摩川'], date: '2026-07-12', lat: 35.8036, lon: 139.1944,
+      v: [{ f: 'u24', w: 1080, h: 1920 }, { f: 'u26', w: 1080, h: 1920 }, { f: 'u27', w: 1920, h: 1080 }] },
+    { no: 'T5', name: '高尾山の沢（上流側）', place: '東京都八王子市高尾町', flow: ['名称のない沢', '案内川', '南浅川', '浅川', '多摩川'], date: '2026-07-04', lat: 35.6224, lon: 139.2489,
+      v: [{ f: 't54', w: 1080, h: 1920 }, { f: 't55', w: 1080, h: 1920 }] },
+    { no: 'T6', name: '高尾山の沢（中ほど）', place: '東京都八王子市高尾町', flow: ['名称のない沢', '案内川', '南浅川', '浅川', '多摩川'], date: '2026-07-04', lat: 35.6225, lon: 139.2505,
+      v: [{ f: 't58', w: 1080, h: 1920 }, { f: 't59', w: 1080, h: 1920 }, { f: 't60', w: 1080, h: 1920 }] },
+    { no: 'T7', name: '高尾山の沢（下流側）', place: '東京都八王子市高尾町', flow: ['名称のない沢', '案内川', '南浅川', '浅川', '多摩川'], date: '2026-07-04', lat: 35.6266, lon: 139.2559,
+      v: [{ f: 't65', w: 1080, h: 1920 }] },
+    { no: 'T8', name: '鮎美橋', place: '東京都青梅市駒木町三丁目', flow: ['多摩川'], date: '2026-07-12', lat: 35.7852, lon: 139.2568,
+      v: [{ f: 'm2', w: 1080, h: 1920 }, { f: 'm3', w: 1080, h: 1920 }, { f: 'm4', w: 1080, h: 1920 }, { f: 'm5', w: 1080, h: 1920 }, { f: 'm6', w: 1080, h: 1920 }, { f: 'm7', w: 1920, h: 1080 }, { f: 'm10', w: 1080, h: 1920 }, { f: 'm11', w: 1080, h: 1920 }, { f: 'm12', w: 1080, h: 1920 }, { f: 'm13', w: 1080, h: 1920 }, { f: 'm14', w: 1080, h: 1920 }, { f: 'm15', w: 1080, h: 1920 }] },
+    { no: 'T9', name: '昭和用水堰', place: '東京都昭島市拝島町五丁目', flow: ['多摩川'], date: '2026-08-28', lat: 35.7085, lon: 139.3335,
+      v: [{ f: 's0', w: 1920, h: 1080 }, { f: 's2', w: 1920, h: 1080 }, { f: 's3', w: 1920, h: 1080 }, { f: 's4', w: 1080, h: 1920 }, { f: 's5', w: 1080, h: 1920 }, { f: 's6', w: 1080, h: 1920 }, { f: 's9', w: 1080, h: 1920 }, { f: 's15', w: 1080, h: 1920 }] },
+    { no: 'T10', name: '日野用水堰', place: '東京都昭島市大神町四丁目', flow: ['多摩川'], date: '2026-08-28', lat: 35.6955, lon: 139.3585,
+      v: [{ f: 'y0', w: 1920, h: 1080 }, { f: 'y3', w: 1080, h: 1920 }, { f: 'y5', w: 1080, h: 1920 }, { f: 'y8', w: 1920, h: 1080 }, { f: 'y9', w: 1080, h: 1920 }, { f: 'y10', w: 1080, h: 1920 }, { f: 'y11', w: 1080, h: 1920 }, { f: 'y12', w: 1080, h: 1920 }, { f: 'y13', w: 1080, h: 1920 }, { f: 'y14', w: 1080, h: 1920 }, { f: 'y16', w: 1080, h: 1920 }, { f: 'y17', w: 1080, h: 1920 }, { f: 'y18', w: 1080, h: 1920 }] },
+    { no: 'T11', name: '八高線の橋', place: '東京都昭島市宮沢町三丁目', flow: ['多摩川'], date: '2026-08-28', lat: 35.6948, lon: 139.3632,
+      v: [{ f: 'h0', w: 1080, h: 1920 }, { f: 'h2', w: 1920, h: 1080 }, { f: 'h3', w: 1080, h: 1920 }, { f: 'h4', w: 1920, h: 1080 }, { f: 'h7', w: 1080, h: 1920 }, { f: 'h19', w: 1920, h: 1080 }, { f: 'h22', w: 1080, h: 1920 }] },
+    { no: 'T12', name: '多摩川 樋門からの流れ', place: '東京都昭島市宮沢町三丁目', flow: ['樋門', '多摩川'], date: '2026-08-28', lat: 35.6944, lon: 139.3727,
+      v: [{ f: 'a1', w: 1920, h: 1080 }, { f: 'a2', w: 1920, h: 1080 }, { f: 'a3', w: 1080, h: 1920 }] },
+    { no: 'T13', name: '二子橋', place: '東京都世田谷区玉川三丁目', flow: ['多摩川'], date: '2024-04-19', lat: 35.6106, lon: 139.6245,
+      v: [{ f: 'f0', w: 1440, h: 1080 }, { f: 'f2', w: 1440, h: 1080 }, { f: 'f3', w: 1440, h: 1080 }, { f: 'f5', w: 1080, h: 1440 }, { f: 'f6', w: 1080, h: 1440 }, { f: 'f7', w: 1440, h: 1080 }, { f: 'f8', w: 1440, h: 1080 }, { f: 'f9', w: 1440, h: 1080 }, { f: 'f10', w: 1440, h: 1080 }, { f: 'f12', w: 1920, h: 1080 }, { f: 'f14', w: 1440, h: 1080 }, { f: 'f15', w: 1440, h: 1080 }, { f: 'f16', w: 1920, h: 1080 }, { f: 'f17', w: 1920, h: 1080 }, { f: 'f18', w: 1920, h: 1080 }] },
+    { no: 'T14', name: '等々力渓谷', place: '東京都世田谷区中町一丁目', flow: ['谷沢川', '多摩川'], date: '2026-10-23', lat: 35.6064, lon: 139.6457,
+      v: [{ f: 'd9', w: 1080, h: 1920 }, { f: 'd11', w: 1080, h: 1920 }, { f: 'd13', w: 1080, h: 1920 }, { f: 'd22', w: 1920, h: 1080 }, { f: 'd25', w: 1080, h: 1920 }] }
+  ],
+  oomu: [
+    { no: 'O1', name: '大武川（上流側）', place: '山梨県北杜市武川町柳澤', flow: ['大武川', '釜無川'], date: '2026-09-14', lat: 35.7663, lon: 138.3164,
+      v: [{ f: 'o12', w: 1080, h: 1920 }, { f: 'o13', w: 1080, h: 1920 }, { f: 'o14', w: 1920, h: 1080 }, { f: 'o15', w: 1080, h: 1920 }, { f: 'o17', w: 1080, h: 1920 }] },
+    { no: 'O2', name: '大武川（下流側）', place: '山梨県北杜市武川町牧原', flow: ['大武川', '釜無川'], date: '2026-09-14', lat: 35.788, lon: 138.3862,
+      v: [{ f: 'o9', w: 1920, h: 1080 }, { f: 'o10', w: 1920, h: 1080 }] },
+    { no: 'O3', name: '釜無川（竜王）', place: '山梨県甲斐市竜王', flow: ['釜無川'], date: '2026-09-14', lat: 35.6683, lon: 138.5015,
+      v: [{ f: 'o1', w: 1920, h: 1080 }] }
+  ]
+};
 const BASINS = [{
   id: 'tama', name: '多摩川流域', file: 'tama.json',
-  zooms: [{ t: '流域全体' }, { t: '高尾山', c: [6110, 5762], w: 240 }, { t: '青梅', c: [6146, 4148], w: 240 }, { t: '昭島・拝島', c: [6928, 4985], w: 700 }, { t: '世田谷', c: [9217, 5915], w: 500 }],
-  /* filled from the shared albums: v = video file stem in v/, with its encoded size */
-  places: [
-    { no: 'T1', name: '高尾山の沢（上流側）', place: '東京都八王子市高尾町', flow: ['名称のない沢', '案内川', '南浅川', '浅川', '多摩川'], date: '2026-07-04', lat: 35.6224, lon: 139.2489,
-      v: [{ f: 't54', w: 720, h: 1280 }, { f: 't55', w: 720, h: 1280 }] },
-    { no: 'T2', name: '高尾山の沢（中ほど）', place: '東京都八王子市高尾町', flow: ['名称のない沢', '案内川', '南浅川', '浅川', '多摩川'], date: '2026-07-04', lat: 35.6225, lon: 139.2505,
-      v: [{ f: 't58', w: 720, h: 1280 }, { f: 't59c', w: 720, h: 1280 }, { f: 't60', w: 720, h: 1280 }] },
-    { no: 'T3', name: '高尾山の沢（下流側）', place: '東京都八王子市高尾町', flow: ['名称のない沢', '案内川', '南浅川', '浅川', '多摩川'], date: '2026-07-04', lat: 35.6266, lon: 139.2559,
-      v: [{ f: 't65', w: 720, h: 1280 }] },
-    { no: 'T4', name: '鮎美橋', place: '東京都青梅市駒木町三丁目', flow: ['多摩川'], date: '2026-07-12', lat: 35.7852, lon: 139.2568,
-      v: [] },
-    { no: 'T5', name: '昭和用水堰', place: '東京都昭島市拝島町五丁目', flow: ['多摩川'], date: '2026-08-28', lat: 35.7085, lon: 139.3335,
-      v: [{ f: 's0', w: 1280, h: 720 }, { f: 's2', w: 1280, h: 720 }, { f: 's4', w: 720, h: 1280 }, { f: 's5', w: 720, h: 1280 }, { f: 's9', w: 720, h: 1280 }, { f: 's15', w: 720, h: 1280 }] },
-    { no: 'T6', name: '日野用水堰', place: '東京都昭島市大神町四丁目', flow: ['多摩川'], date: '2026-08-28', lat: 35.6955, lon: 139.3585,
-      v: [] },
-    { no: 'T7', name: '八高線の橋', place: '東京都昭島市宮沢町三丁目', flow: ['多摩川'], date: '2026-08-28', lat: 35.6948, lon: 139.3632,
-      v: [{ f: 'h0', w: 720, h: 1280 }, { f: 'h2', w: 1280, h: 720 }, { f: 'h3', w: 720, h: 1280 }, { f: 'h4', w: 1280, h: 720 }, { f: 'h7', w: 720, h: 1280 }, { f: 'h19', w: 1280, h: 720 }, { f: 'h22', w: 720, h: 1280 }] },
-    { no: 'T8', name: '多摩川 樋門からの流れ', place: '東京都昭島市宮沢町三丁目', flow: ['樋門', '多摩川'], date: '2026-08-28', lat: 35.6944, lon: 139.3727,
-      v: [{ f: 'a1', w: 1280, h: 720 }, { f: 'a2', w: 1280, h: 720 }, { f: 'a3', w: 720, h: 1280 }] },
-    { no: 'T9', name: '二子橋', place: '東京都世田谷区玉川三丁目', flow: ['多摩川'], date: '2024-04-19', lat: 35.6106, lon: 139.6245,
-      v: [] },
-    { no: 'T10', name: '等々力渓谷', place: '東京都世田谷区中町一丁目', flow: ['谷沢川', '多摩川'], date: '2026-10-23', lat: 35.6064, lon: 139.6457,
-      v: [{ f: 'd9', w: 720, h: 1280 }, { f: 'd11', w: 720, h: 1280 }, { f: 'd13', w: 720, h: 1280 }] }
-  ]
+  zooms: [{ t: '流域全体' }, { t: '高尾山', c: [6110, 5762], w: 240 }, { t: '柚木・沢井', c: [5603, 3965], w: 260 }, { t: '鮎美橋', c: [6146, 4148], w: 240 }, { t: '昭島・拝島', c: [6928, 4985], w: 700 }, { t: '世田谷', c: [9217, 5915], w: 500 }],
+  places: PLACES.tama
+}, {
+  id: 'oomu', name: '大武川流域', file: 'oomu.json',
+  zooms: [{ t: '流域全体', c: [-760, 4700], w: 2100 }, { t: '大武川上流', c: [-1491, 4337], w: 300 }, { t: '大武川下流', c: [-924, 4120], w: 300 }, { t: '竜王', c: [12, 5317], w: 300 }],
+  places: PLACES.oomu
 }];
 const NS = 'http://www.w3.org/2000/svg', svg = document.getElementById('map'), box = document.getElementById('mapbox');
 const rivG = document.getElementById('riv'), rlG = document.getElementById('rl'), pinsG = document.getElementById('pins');
@@ -138,7 +162,7 @@ const U = () => vb[2] / (svg.clientWidth || 400);
 function apply() { svg.setAttribute('viewBox', vb.map(v => v.toFixed(2)).join(' ')); drawLabels(); drawPins(); drawScale(); }
 function drawRivers() {
   rivG.innerHTML = '';
-  for (const c of ['c', 'b', 'a']) {
+  for (const c of ['o', 'c', 'b', 'a']) {
     let d = ''; for (const l of D.l[c] || []) { d += 'M' + l[0] + ' ' + l[1]; if (l.length > 2) d += 'l' + l.slice(2).join(' '); }
     const p = document.createElementNS(NS, 'path'); p.setAttribute('class', c); p.setAttribute('d', d.replace(/ -/g, '-')); rivG.appendChild(p);
   }
@@ -227,6 +251,7 @@ async function openBasin(id) {
   document.getElementById('m-basin').textContent = B.name; document.getElementById('m-n').textContent = B.places.length;
   document.getElementById('m-v').textContent = B.places.reduce((n, p) => n + p.v.length, 0) + ' 本';
   document.getElementById('maptitle').textContent = '位置図 ― ' + B.name;
+  document.getElementById('lg-o').hidden = B.id === 'tama';
   document.getElementById('zooms').innerHTML = B.zooms.map((z, i) => `<button data-i="${i}" aria-pressed="false">${z.t}</button>`).join('');
   document.querySelectorAll('#zooms button').forEach(b => b.addEventListener('click', () => zoomTo(+b.dataset.i)));
   renderList();
