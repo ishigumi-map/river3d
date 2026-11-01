@@ -1,0 +1,244 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noai, noimageai">
+<title>流域マップ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Shippori+Mincho+B1:wght@700;800&family=BIZ+UDGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F4F3EF;--ink:#1C3A7E;--rule:#1C3A7E;--hair:#93BCD6;--red:#C62422;--blue:#3286BE;--navy:#12286B;--mid:#93BCD6;
+ --ui:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;--mono:"BIZ UDGothic","Osaka-Mono",ui-monospace,monospace;color-scheme:light}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.7}
+.wrap{max-width:1160px;margin:0 auto;padding:24px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:1em}
+.blk{border:3px solid var(--rule);background:var(--paper);min-width:0}
+.colorbar{display:grid;grid-template-columns:3fr 2fr 1fr 1fr;height:10px}
+.colorbar i:nth-child(1){background:#122A6B}.colorbar i:nth-child(2){background:#3286BE}.colorbar i:nth-child(3){background:#93BCD6}.colorbar i:nth-child(4){background:#C62422}
+.titleblock .in{display:grid;grid-template-columns:minmax(0,1fr) auto}
+.titleblock .t{padding:14px 18px;min-width:0}
+.titleblock h1{margin:0;font-size:1.35rem;font-weight:700;letter-spacing:.06em}
+.titleblock p{margin:2px 0 0;font-size:.82rem}
+.titleblock .back{display:inline-block;margin-top:8px;font-size:.8rem;font-weight:700;color:var(--ink);text-underline-offset:3px}
+.titleblock table{border-collapse:collapse;font-size:.75rem;border-left:1px solid var(--rule)}
+.titleblock td{padding:3px 12px;border-bottom:1px solid var(--hair);white-space:nowrap}
+.titleblock tr:last-child td{border-bottom:0}
+.titleblock td:first-child{border-right:1px solid var(--hair)}
+.titleblock td.v{font-family:var(--mono)}
+@media (max-width:640px){.titleblock .in{grid-template-columns:minmax(0,1fr)}.titleblock table{border-left:0;border-top:1px solid var(--rule);width:100%}}
+.basins{display:flex;align-items:center;gap:10px;padding:8px 12px;font-size:.75rem;letter-spacing:.12em;flex-wrap:wrap}
+.basins b{font-weight:700}
+.seg{display:flex;flex-wrap:wrap}
+.seg button{font:inherit;font-size:.75rem;letter-spacing:.04em;padding:3px 10px;border:1px solid var(--rule);margin-left:-1px;background:transparent;color:var(--ink);cursor:pointer;border-radius:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.body{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:1em;align-items:start}
+@media (max-width:820px){.body{grid-template-columns:minmax(0,1fr)}}
+.head{display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--rule);font-size:.75rem;letter-spacing:.12em;flex-wrap:wrap}
+.head b{font-weight:700}
+.head .seg{margin-left:auto}
+.mapbox{position:relative;aspect-ratio:4/3;touch-action:none;overflow:hidden;background-color:var(--paper);background-image:radial-gradient(circle,var(--mid) 0.9px,transparent 1.2px);background-size:5px 5px}
+.mapbox svg{width:100%;height:100%;display:block;cursor:grab}
+.mapbox svg.drag{cursor:grabbing}
+.riv path{fill:none;stroke:var(--blue);stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.riv .a{stroke-width:2.6}.riv .b{stroke-width:1.4;opacity:.9}.riv .c{stroke-width:1;opacity:.85}
+.rl text{fill:var(--navy);font-family:var(--ui);font-weight:700;paint-order:stroke;stroke:var(--paper);stroke-width:3px;stroke-linejoin:round;pointer-events:none;letter-spacing:.08em}
+.pin rect{fill:var(--ink);stroke:var(--paper);vector-effect:non-scaling-stroke;stroke-width:1.5;cursor:pointer}
+.pin text{pointer-events:none}
+.pin text.n{fill:var(--paper);font-family:var(--mono);font-weight:700}
+.pin text.l{fill:var(--ink);font-weight:700;paint-order:stroke;stroke:var(--paper);stroke-width:3px;stroke-linejoin:round}
+.pin.sel rect{fill:var(--red)}
+.pin:focus{outline:none}.pin:focus-visible rect{stroke:var(--red);stroke-width:3}
+.north{position:absolute;right:10px;top:10px;width:30px;text-align:center;font-family:var(--mono);font-size:.7rem;pointer-events:none}
+.scale{position:absolute;left:10px;bottom:10px;font-family:var(--mono);font-size:.68rem;pointer-events:none}
+.scale i{display:block;height:5px;border:1px solid var(--ink);border-top:0;margin-top:1px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;padding:6px 12px;border-top:1px solid var(--rule);font-size:.72rem}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:22px;border-top:2.6px solid var(--blue)}
+.legend i.b{border-top-width:1.4px}.legend i.c{border-top-width:.8px;opacity:.6}
+.list{display:flex;flex-direction:column;gap:1em}
+.place{scroll-margin:12px}
+.place .ph{display:flex;align-items:baseline;gap:.6em;background:var(--navy);color:var(--paper);font-weight:700;padding:6px 10px;letter-spacing:.04em;cursor:pointer}
+.place .ph .n{font-family:var(--mono)}
+.place.sel .ph{background:var(--red)}
+.place dl{display:grid;grid-template-columns:5.5em minmax(0,1fr);margin:0;font-size:.82rem}
+.place dt,.place dd{margin:0;padding:5px 10px;border-bottom:1px solid var(--hair)}
+.place dt{border-right:1px solid var(--hair);font-size:.76rem}
+.place dd.m{font-family:var(--mono);font-size:.78rem}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:2px 0}
+.flow span+span::before{content:"→";margin:0 .4em;color:var(--blue)}
+.vids{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:10px}
+.vids figure{margin:0;min-width:0}
+.vids video{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;background:var(--navy);border:1px solid var(--rule)}
+.vids video.tall{aspect-ratio:9/16;max-height:340px;object-fit:contain}
+.vids figcaption{font-family:var(--mono);font-size:.7rem;margin-top:2px}
+.vhead{padding:6px 10px 0;font-size:.72rem;letter-spacing:.12em;font-weight:700}
+.foot{display:flex;flex-direction:column;gap:2px;padding:8px 12px;font-size:.7rem}
+</style></head><body>
+<div class="wrap">
+ <header class="titleblock blk"><div class="colorbar" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="in">
+  <div class="t"><h1>流域マップ</h1><p>流域ごとに、川のつながりと現地で撮った動画をまとめた地図です。地図の番号を押すと、その場所の動画へ移動します。</p><a class="back" href="../">← 石組みを適用した現地マップ</a></div>
+  <table><tr><td>流域</td><td class="v" id="m-basin"></td></tr><tr><td>地点数</td><td class="v" id="m-n"></td></tr><tr><td>動画</td><td class="v" id="m-v"></td></tr><tr><td>更新</td><td class="v">2026-11-01</td></tr></table>
+ </div></header>
+ <div class="blk basins"><b>流域</b><div class="seg" id="basins" role="group" aria-label="流域を選ぶ"></div></div>
+ <div class="body">
+  <div class="blk">
+   <div class="head"><b id="maptitle">位置図</b><div class="seg" id="zooms" role="group" aria-label="地図の範囲"></div></div>
+   <div class="mapbox" id="mapbox">
+    <svg id="map" viewBox="0 0 100 75" role="img" aria-label="流域の川と地点の位置"><g class="riv" id="riv"></g><g class="rl" id="rl"></g><g id="pins"></g></svg>
+    <div class="north" aria-hidden="true"><svg viewBox="0 0 20 28" width="18" height="25"><path d="M10 1 L17 26 L10 20 L3 26 Z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M10 1 L10 20 L3 26 Z" fill="currentColor"/></svg><br>N</div>
+    <div class="scale" aria-hidden="true"><span id="scale-t"></span><i id="scale-b"></i></div>
+   </div>
+   <div class="legend"><span><i></i>一級河川（国の管理区間）</span><span><i class="b"></i>一級河川（都県の管理区間）</span><span><i class="c"></i>そのほかの川・沢</span></div>
+  </div>
+  <div class="list" id="list"></div>
+ </div>
+ <footer class="blk foot"><span>撮影地点は動画に記録された位置情報（GPS）によるもので、数十mずれることがあります。</span><span>川: 国土数値情報（河川データ）（国土交通省）を加工して作成。地名: 国土地理院の逆ジオコーディングによる。</span></footer>
+</div>
+<script>
+/* Each basin: rivers from 国土数値情報 W05 for one 水系 (file: k units per degree, x scaled by cos(lat)), places from the videos' GPS. */
+const BASINS = [{
+  id: 'tama', name: '多摩川流域', file: 'tama.json',
+  zooms: [{ t: '流域全体' }, { t: '高尾山', c: [6110, 5762], w: 240 }, { t: '青梅', c: [6146, 4148], w: 240 }, { t: '昭島・拝島', c: [6928, 4985], w: 700 }, { t: '世田谷', c: [9217, 5915], w: 500 }],
+  /* filled from the shared albums: v = video file stem in v/, with its encoded size */
+  places: [
+    { no: 'T1', name: '高尾山の沢（上流側）', place: '東京都八王子市高尾町', flow: ['名称のない沢', '案内川', '南浅川', '浅川', '多摩川'], date: '2026-07-04', lat: 35.6224, lon: 139.2489,
+      v: [{ f: 't54', w: 720, h: 1280 }, { f: 't55', w: 720, h: 1280 }] },
+    { no: 'T2', name: '高尾山の沢（中ほど）', place: '東京都八王子市高尾町', flow: ['名称のない沢', '案内川', '南浅川', '浅川', '多摩川'], date: '2026-07-04', lat: 35.6225, lon: 139.2505,
+      v: [{ f: 't58', w: 720, h: 1280 }, { f: 't59c', w: 720, h: 1280 }, { f: 't60', w: 720, h: 1280 }] },
+    { no: 'T3', name: '高尾山の沢（下流側）', place: '東京都八王子市高尾町', flow: ['名称のない沢', '案内川', '南浅川', '浅川', '多摩川'], date: '2026-07-04', lat: 35.6266, lon: 139.2559,
+      v: [{ f: 't65', w: 720, h: 1280 }] },
+    { no: 'T4', name: '鮎美橋', place: '東京都青梅市駒木町三丁目', flow: ['多摩川'], date: '2026-07-12', lat: 35.7852, lon: 139.2568,
+      v: [] },
+    { no: 'T5', name: '昭和用水堰', place: '東京都昭島市拝島町五丁目', flow: ['多摩川'], date: '2026-08-28', lat: 35.7085, lon: 139.3335,
+      v: [{ f: 's0', w: 1280, h: 720 }, { f: 's2', w: 1280, h: 720 }, { f: 's4', w: 720, h: 1280 }, { f: 's5', w: 720, h: 1280 }, { f: 's7', w: 720, h: 1280 }, { f: 's8', w: 720, h: 1280 }, { f: 's9', w: 720, h: 1280 }, { f: 's15', w: 720, h: 1280 }] },
+    { no: 'T6', name: '日野用水堰', place: '東京都昭島市大神町四丁目', flow: ['多摩川'], date: '2026-08-28', lat: 35.6955, lon: 139.3585,
+      v: [] },
+    { no: 'T7', name: '八高線の橋', place: '東京都昭島市宮沢町三丁目', flow: ['多摩川'], date: '2026-08-28', lat: 35.6948, lon: 139.3632,
+      v: [{ f: 'h0', w: 720, h: 1280 }, { f: 'h2', w: 1280, h: 720 }, { f: 'h3', w: 720, h: 1280 }, { f: 'h4', w: 1280, h: 720 }, { f: 'h7', w: 720, h: 1280 }, { f: 'h19', w: 1280, h: 720 }, { f: 'h22', w: 720, h: 1280 }] },
+    { no: 'T8', name: '多摩川 樋門からの流れ', place: '東京都昭島市宮沢町三丁目', flow: ['樋門', '多摩川'], date: '2026-08-28', lat: 35.6944, lon: 139.3727,
+      v: [{ f: 'a1', w: 1280, h: 720 }, { f: 'a2', w: 1280, h: 720 }, { f: 'a3', w: 720, h: 1280 }] },
+    { no: 'T9', name: '二子橋', place: '東京都世田谷区玉川三丁目', flow: ['多摩川'], date: '2024-04-19', lat: 35.6106, lon: 139.6245,
+      v: [] },
+    { no: 'T10', name: '等々力渓谷', place: '東京都世田谷区中町一丁目', flow: ['谷沢川', '多摩川'], date: '2026-10-23', lat: 35.6064, lon: 139.6457,
+      v: [{ f: 'd9', w: 720, h: 1280 }, { f: 'd11', w: 720, h: 1280 }, { f: 'd13', w: 720, h: 1280 }] }
+  ]
+}];
+const NS = 'http://www.w3.org/2000/svg', svg = document.getElementById('map'), box = document.getElementById('mapbox');
+const rivG = document.getElementById('riv'), rlG = document.getElementById('rl'), pinsG = document.getElementById('pins');
+let B = null, D = null, vb = [0, 0, 100, 75], sel = null;
+const P = (lo, la) => [(lo - D.lon0) * D.c * D.k, (D.lat0 - la) * D.k];
+const asp = () => (box.clientHeight || 3) / (box.clientWidth || 4);
+function fit(cx, cy, w) { vb = [cx - w / 2, cy - w * asp() / 2, w, w * asp()]; }
+function fitAll() { const [x0, y0, x1, y1] = D.bbox, w = Math.max(x1 - x0, (y1 - y0) / asp()) * 1.06; fit((x0 + x1) / 2, (y0 + y1) / 2, w); }
+const U = () => vb[2] / (svg.clientWidth || 400);
+function apply() { svg.setAttribute('viewBox', vb.map(v => v.toFixed(2)).join(' ')); drawLabels(); drawPins(); drawScale(); }
+function drawRivers() {
+  rivG.innerHTML = '';
+  for (const c of ['c', 'b', 'a']) {
+    let d = ''; for (const l of D.l[c] || []) { d += 'M' + l[0] + ' ' + l[1]; if (l.length > 2) d += 'l' + l.slice(2).join(' '); }
+    const p = document.createElementNS(NS, 'path'); p.setAttribute('class', c); p.setAttribute('d', d.replace(/ -/g, '-')); rivG.appendChild(p);
+  }
+}
+function drawLabels() {
+  const u = U(), fs = 11 * u, minLen = vb[2] * (svg.clientWidth < 600 ? 0.3 : 0.15); let h = '';
+  for (const l of D.labels) {
+    if (l.len < minLen || l.x < vb[0] || l.x > vb[0] + vb[2] || l.y < vb[1] || l.y > vb[1] + vb[3]) continue;
+    h += `<text x="${l.x}" y="${l.y - 4 * u}" font-size="${fs}" text-anchor="middle" transform="rotate(${l.r} ${l.x} ${l.y})" style="stroke-width:${3 * u}px">${l.n}</text>`;
+  }
+  rlG.innerHTML = h;
+}
+function drawPins() {
+  const u = U(), r = 8 * u; pinsG.innerHTML = '';
+  const inView = B.places.filter(p => { const [x, y] = P(p.lon, p.lat); return x > vb[0] && x < vb[0] + vb[2] && y > vb[1] && y < vb[1] + vb[3]; });
+  /* a pin that would cover an earlier one is drawn as a small dot at its true place; zoom in to tell them apart */
+  const pos = B.places.map(p => P(p.lon, p.lat)), full = [];
+  B.places.forEach((p, i) => {
+    const [x, y] = pos[i], hit = full.some(j => Math.abs(pos[j][0] - x) < 2.1 * r && Math.abs(pos[j][1] - y) < 2.1 * r) && sel !== p.no;
+    if (!hit) full.push(i);
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'pin' + (sel === p.no ? ' sel' : '')); g.setAttribute('tabindex', '0'); g.setAttribute('role', 'button'); g.setAttribute('aria-label', `${p.no} ${p.name}`);
+    const near = pos.some((q, j) => j !== i && Math.abs(q[0] - x) < 150 * u && Math.abs(q[1] - y) < 18 * u);
+    const lab = sel === p.no || (inView.length <= 3 && !near);
+    g.innerHTML = hit ? `<rect x="${x - 3 * u}" y="${y - 3 * u}" width="${6 * u}" height="${6 * u}"/>` :
+      `<rect x="${x - r}" y="${y - r}" width="${2 * r}" height="${2 * r}"/><text class="n" x="${x}" y="${y + 4 * u}" font-size="${10 * u}" text-anchor="middle">${p.no}</text>` +
+      (lab ? `<text class="l" x="${x + r + 4 * u}" y="${y + 4 * u}" font-size="${11 * u}" style="stroke-width:${3 * u}px">${p.name}</text>` : '');
+    g.addEventListener('click', e => { e.stopPropagation(); select(p.no, true); });
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(p.no, true); } });
+    if (hit) pinsG.prepend(g); else pinsG.appendChild(g);
+  });
+}
+function drawScale() {
+  const mPerPx = U() * 1e5 / D.k * 1.111, target = 90 * mPerPx;
+  const nice = [50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000].reduce((a, b) => Math.abs(b - target) < Math.abs(a - target) ? b : a);
+  document.getElementById('scale-b').style.width = (nice / mPerPx).toFixed(0) + 'px';
+  document.getElementById('scale-t').textContent = nice >= 1000 ? nice / 1000 + ' km' : nice + ' m';
+}
+function animateTo(t) {
+  const f = vb.slice(), t0 = performance.now(), reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  (function step(n) { const k = reduce ? 1 : Math.min(1, (n - t0) / 450), e = 1 - Math.pow(1 - k, 3);
+    vb = f.map((v, i) => v + (t[i] - v) * e); apply(); if (k < 1) requestAnimationFrame(step); })(t0);
+}
+function zoomTo(i, instant) {
+  document.querySelectorAll('#zooms button').forEach((b, j) => b.setAttribute('aria-pressed', String(j === i)));
+  const z = B.zooms[i], old = vb.slice(); if (z.c) fit(z.c[0], z.c[1], z.w); else fitAll();
+  const t = vb.slice(); if (instant) apply(); else { vb = old; animateTo(t); }
+}
+function unpress() { document.querySelectorAll('#zooms button').forEach(b => b.setAttribute('aria-pressed', 'false')); }
+function select(no, scroll) {
+  sel = no; drawPins();
+  document.querySelectorAll('.place').forEach(c => c.classList.toggle('sel', c.dataset.no === no));
+  if (scroll) { const c = document.getElementById('p-' + no); c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+}
+function focusPlace(no) {
+  const p = B.places.find(x => x.no === no), [x, y] = P(p.lon, p.lat), old = vb.slice();
+  fit(x, y, Math.min(vb[2], 160)); const t = vb.slice(); vb = old; unpress(); animateTo(t); select(no);
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function renderList() {
+  document.getElementById('list').innerHTML = B.places.map(p => `<section class="blk place" id="p-${p.no}" data-no="${p.no}">
+   <div class="ph" role="button" tabindex="0" data-focus="${p.no}" aria-label="${esc(p.no + ' ' + p.name)} を地図で見る"><span class="n">${p.no}</span><span>${esc(p.name)}</span></div>
+   <dl><dt>場所</dt><dd>${esc(p.place)}</dd><dt>川の流れ</dt><dd><span class="flow">${p.flow.map(f => `<span>${esc(f)}</span>`).join('')}</span></dd>
+   <dt>撮影日</dt><dd class="m">${p.date}</dd><dt>位置</dt><dd class="m">${p.lat.toFixed(4)}°N ${p.lon.toFixed(4)}°E</dd></dl>
+   <div class="vhead">${p.v.length ? `動画 ${p.v.length}本` : '動画は準備中です'}</div>
+   <div class="vids">${p.v.map((v, i) => `<figure><video class="${v.h > v.w ? 'tall' : ''}" src="v/${v.f}.mp4" poster="v/${v.f}.jpg" controls playsinline muted preload="none" width="${v.w}" height="${v.h}"></video><figcaption>${p.no}-${i + 1}</figcaption></figure>`).join('')}</div>
+  </section>`).join('');
+  document.querySelectorAll('[data-focus]').forEach(h => {
+    const go = () => { focusPlace(h.dataset.focus); document.getElementById('mapbox').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); };
+    h.addEventListener('click', go); h.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+  /* one video at a time */
+  document.querySelectorAll('video').forEach(v => v.addEventListener('play', () => document.querySelectorAll('video').forEach(o => { if (o !== v) o.pause(); })));
+}
+async function openBasin(id) {
+  B = BASINS.find(b => b.id === id);
+  document.querySelectorAll('#basins button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.id === id)));
+  document.getElementById('m-basin').textContent = B.name; document.getElementById('m-n').textContent = B.places.length;
+  document.getElementById('m-v').textContent = B.places.reduce((n, p) => n + p.v.length, 0) + ' 本';
+  document.getElementById('maptitle').textContent = '位置図 ― ' + B.name;
+  document.getElementById('zooms').innerHTML = B.zooms.map((z, i) => `<button data-i="${i}" aria-pressed="false">${z.t}</button>`).join('');
+  document.querySelectorAll('#zooms button').forEach(b => b.addEventListener('click', () => zoomTo(+b.dataset.i)));
+  renderList();
+  D = await fetch(B.file).then(r => r.json());
+  drawRivers(); zoomTo(0, true);
+}
+document.getElementById('basins').innerHTML = BASINS.map(b => `<button data-id="${b.id}" aria-pressed="false">${b.name}</button>`).join('');
+document.querySelectorAll('#basins button').forEach(b => b.addEventListener('click', () => openBasin(b.dataset.id)));
+/* pan and zoom: drag, wheel, two-finger pinch */
+const pts = new Map(); let last = null;
+function toUser(cx, cy) { const r = svg.getBoundingClientRect(); return [vb[0] + (cx - r.left) / r.width * vb[2], vb[1] + (cy - r.top) / r.height * vb[3]]; }
+function zoomAt(cx, cy, f) {
+  const [ux, uy] = toUser(cx, cy), w = Math.min((D.bbox[2] - D.bbox[0]) * 2, Math.max(20, vb[2] * f)), s = w / vb[2];
+  vb = [ux - (ux - vb[0]) * s, uy - (uy - vb[1]) * s, w, vb[3] * s]; unpress(); apply();
+}
+svg.addEventListener('wheel', e => { if (!D) return; e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.exp(e.deltaY * 0.0015)); }, { passive: false });
+svg.addEventListener('pointerdown', e => { if (e.target.closest('.pin')) return; svg.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); svg.classList.add('drag'); last = null; });
+svg.addEventListener('pointermove', e => {
+  if (!pts.has(e.pointerId) || !D) return; const prev = pts.get(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
+  const r = svg.getBoundingClientRect();
+  if (pts.size === 1) { vb[0] -= (e.clientX - prev[0]) / r.width * vb[2]; vb[1] -= (e.clientY - prev[1]) / r.height * vb[3]; unpress(); apply(); }
+  else if (pts.size === 2) { const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    if (last) zoomAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, last / d); last = d; }
+});
+const up = e => { pts.delete(e.pointerId); if (pts.size < 2) last = null; if (!pts.size) svg.classList.remove('drag'); };
+svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
+addEventListener('resize', () => { if (!D) return; const w = vb[2], cx = vb[0] + w / 2, cy = vb[1] + vb[3] / 2; fit(cx, cy, w); apply(); });
+openBasin(BASINS[0].id);
+</script>
+</body></html>
