@@ -63,11 +63,17 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15
 .place dd.m{font-family:var(--mono);font-size:.78rem}
 .flow{display:flex;flex-wrap:wrap;align-items:center;gap:2px 0}
 .flow span+span::before{content:"→";margin:0 .4em;color:var(--blue)}
-.vids{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:10px}
+.vids{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;padding:10px}
 .vids figure{margin:0;min-width:0}
-.vids video{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;background:var(--navy);border:1px solid var(--rule)}
-.vids video.tall{aspect-ratio:9/16;max-height:340px;object-fit:contain}
+.vids button{display:block;width:100%;aspect-ratio:1/1;padding:0;border:1px solid var(--rule);background:var(--navy) center/cover no-repeat;cursor:pointer;position:relative;border-radius:0}
+.vids button::after{content:"";position:absolute;left:50%;top:50%;width:0;height:0;margin:-11px 0 0 -7px;border-style:solid;border-width:11px 0 11px 18px;border-color:transparent transparent transparent #fff;filter:drop-shadow(0 0 3px rgba(0,0,0,.6))}
+.vids button:focus-visible{outline:3px solid var(--red);outline-offset:1px}
 .vids figcaption{font-family:var(--mono);font-size:.7rem;margin-top:2px}
+.player{position:fixed;inset:0;z-index:20;background:rgba(18,40,107,.94);display:flex;flex-direction:column;padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+.player[hidden]{display:none}
+.player .bar{display:flex;align-items:center;gap:10px;color:var(--paper);font-family:var(--mono);font-size:.8rem;padding-bottom:8px}
+.player .bar button{margin-left:auto;font:inherit;font-family:var(--ui);font-weight:700;font-size:.85rem;padding:6px 14px;background:var(--paper);color:var(--navy);border:0;border-radius:0;cursor:pointer}
+.player video{flex:1;min-height:0;width:100%;object-fit:contain;background:#000}
 .vhead{padding:6px 10px 0;font-size:.72rem;letter-spacing:.12em;font-weight:700}
 .foot{display:flex;flex-direction:column;gap:2px;padding:8px 12px;font-size:.7rem}
 </style></head><body>
@@ -89,6 +95,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15
   </div>
   <div class="list" id="list"></div>
  </div>
+ <div class="player" id="player" hidden role="dialog" aria-modal="true" aria-labelledby="pcap"><div class="bar"><span id="pcap"></span><button type="button" id="pclose">閉じる</button></div><video id="pvid" controls playsinline muted></video></div>
  <footer class="blk foot"><span>撮影地点は動画に記録された位置情報（GPS）によるもので、数十mずれることがあります。</span><span>川: 国土数値情報（河川データ）（国土交通省）を加工して作成。地名: 国土地理院の逆ジオコーディングによる。</span></footer>
 </div>
 <script>
@@ -197,15 +204,23 @@ function renderList() {
    <dl><dt>場所</dt><dd>${esc(p.place)}</dd><dt>川の流れ</dt><dd><span class="flow">${p.flow.map(f => `<span>${esc(f)}</span>`).join('')}</span></dd>
    <dt>撮影日</dt><dd class="m">${p.date}</dd><dt>位置</dt><dd class="m">${p.lat.toFixed(4)}°N ${p.lon.toFixed(4)}°E</dd></dl>
    <div class="vhead">${p.v.length ? `動画 ${p.v.length}本` : '動画は準備中です'}</div>
-   <div class="vids">${p.v.map((v, i) => `<figure><video class="${v.h > v.w ? 'tall' : ''}" src="v/${v.f}.mp4" poster="v/${v.f}.jpg" controls playsinline muted preload="none" width="${v.w}" height="${v.h}"></video><figcaption>${p.no}-${i + 1}</figcaption></figure>`).join('')}</div>
+   <div class="vids">${p.v.map((v, i) => `<figure><button type="button" data-v="${v.f}" data-cap="${p.no}-${i + 1}　${esc(p.name)}" style="background-image:url(v/${v.f}.jpg)" aria-label="動画 ${p.no}-${i + 1} を再生"></button><figcaption>${p.no}-${i + 1}</figcaption></figure>`).join('')}</div>
   </section>`).join('');
   document.querySelectorAll('[data-focus]').forEach(h => {
     const go = () => { focusPlace(h.dataset.focus); document.getElementById('mapbox').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); };
     h.addEventListener('click', go); h.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
   });
-  /* one video at a time */
-  document.querySelectorAll('video').forEach(v => v.addEventListener('play', () => document.querySelectorAll('video').forEach(o => { if (o !== v) o.pause(); })));
+  document.querySelectorAll('.vids button').forEach(b => b.addEventListener('click', () => play(b)));
 }
+/* thumbnails are square crops of the first frame; the video itself plays whole, in its own orientation, in an overlay */
+const player = document.getElementById('player'), pvid = document.getElementById('pvid');
+let lastBtn = null;
+function play(b) { lastBtn = b; pvid.src = `v/${b.dataset.v}.mp4`; pvid.poster = `v/${b.dataset.v}.jpg`; document.getElementById('pcap').textContent = b.dataset.cap;
+  player.hidden = false; document.body.style.overflow = 'hidden'; pvid.play().catch(() => {}); document.getElementById('pclose').focus(); }
+function closePlayer() { if (player.hidden) return; pvid.pause(); pvid.removeAttribute('src'); pvid.load(); player.hidden = true; document.body.style.overflow = ''; if (lastBtn) lastBtn.focus(); }
+document.getElementById('pclose').addEventListener('click', closePlayer);
+player.addEventListener('click', e => { if (e.target === player) closePlayer(); });
+addEventListener('keydown', e => { if (e.key === 'Escape') closePlayer(); });
 async function openBasin(id) {
   B = BASINS.find(b => b.id === id);
   document.querySelectorAll('#basins button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.id === id)));
